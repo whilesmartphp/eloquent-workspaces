@@ -157,7 +157,6 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        dd(config()->all());
         $userModel = config('eloquent-workspaces.user_model', 'App\\Models\\User');
         $user = $userModel::findOrFail($userId);
 
