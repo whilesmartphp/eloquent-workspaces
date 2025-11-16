@@ -256,7 +256,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
 
     private function overrideConfigs()
     {
-        config(['eloquent-workspaces.user_model' => User::class]);
+        config(['workspaces.user_model' => User::class]);
     }
 
     /**

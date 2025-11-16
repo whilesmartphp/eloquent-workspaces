@@ -5,7 +5,7 @@ A comprehensive Laravel package for managing workspaces, invitations, and member
 ## Quick Start
 
 ```bash
-composer require whilesmart/workspaces
+composer require whilesmart/eloquent-workspaces
 php artisan migrate
 ```
 
@@ -47,7 +47,7 @@ For more advanced configuration, you can publish the configuration file:
 php artisan vendor:publish --tag="workspaces-config"
 ```
 
-This will create a `config/eloquent-workspaces.php` file in your application.
+This will create a `config/workspaces.php` file in your application.
 
 ### `route_middleware`
 

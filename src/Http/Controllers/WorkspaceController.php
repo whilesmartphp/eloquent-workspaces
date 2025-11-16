@@ -157,7 +157,7 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $userModel = config('eloquent-workspaces.user_model', 'App\\Models\\User');
+        $userModel = config('workspaces.user_model', 'App\\Models\\User');
         $user = $userModel::findOrFail($userId);
 
         // Remove all roles for this user in this workspace
