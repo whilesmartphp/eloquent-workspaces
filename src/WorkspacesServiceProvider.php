@@ -9,26 +9,26 @@ class WorkspacesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/eloquent-workspaces.php', 'eloquent-workspaces');
+        $this->mergeConfigFrom(__DIR__.'/../config/workspaces.php', 'workspaces');
     }
 
     public function boot(): void
     {
         // Load migrations
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         // Publish config
         $this->publishes([
-            __DIR__ . '/../config/workspaces.php' => config_path('eloquent-workspaces.php'),
+            __DIR__.'/../config/workspaces.php' => config_path('workspaces.php'),
         ], 'workspaces-config');
 
         // Publish migrations
         $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
+            __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'workspaces-migrations');
 
         // Register routes if enabled
-        if (config('eloquent-workspaces.register_routes', true)) {
+        if (config('workspaces.register_routes', true)) {
             $this->registerRoutes();
         }
     }
@@ -36,10 +36,10 @@ class WorkspacesServiceProvider extends ServiceProvider
     protected function registerRoutes(): void
     {
         Route::group([
-            'prefix' => config('eloquent-workspaces.route_prefix', 'api'),
-            'middleware' => config('eloquent-workspaces.route_middleware', ['auth:sanctum']),
+            'prefix' => config('workspaces.route_prefix', 'api'),
+            'middleware' => config('workspaces.route_middleware', []),
         ], function () {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/workspaces.php');
+            $this->loadRoutesFrom(__DIR__.'/../routes/workspaces.php');
         });
     }
 }

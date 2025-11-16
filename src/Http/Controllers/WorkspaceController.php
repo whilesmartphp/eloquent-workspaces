@@ -15,6 +15,9 @@ class WorkspaceController extends Controller
     {
         $workspace = Workspace::findOrFail($workspaceId);
 
+        if (! auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
         // Check if user has access to this workspace
         if (! auth()->user()->hasRole('workspace-member', Workspace::class, $workspace->id) &&
             ! auth()->user()->hasRole('workspace-owner', Workspace::class, $workspace->id) &&

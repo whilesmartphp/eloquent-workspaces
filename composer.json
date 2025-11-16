@@ -14,7 +14,8 @@
     "php": "^8.2",
     "laravel/framework": "^12.0",
     "laravel/sanctum": "^4.0",
-    "whilesmart/eloquent-roles": "*"
+    "whilesmart/eloquent-roles": "*",
+    "cviebrock/eloquent-sluggable": "^12.0"
   },
   "require-dev": {
     "orchestra/testbench": "^10.4",
@@ -32,11 +33,29 @@
       "Whilesmart\\Workspaces\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Workbench\\App\\": "workbench/app/"
+    }
+  },
   "extra": {
     "laravel": {
       "providers": [
         "Whilesmart\\Workspaces\\WorkspacesServiceProvider"
       ]
     }
+  },
+  "scripts": {
+    "test": "vendor/bin/testbench package:test",
+    "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+    "prepare": "@php vendor/bin/testbench package:discover --ansi",
+    "build": "@php vendor/bin/testbench workbench:build --ansi",
+    "pint": [
+      "./vendor/bin/pint"
+    ],
+    "pint:test": [
+      "./vendor/bin/pint --test"
+    ]
   }
 }
+
