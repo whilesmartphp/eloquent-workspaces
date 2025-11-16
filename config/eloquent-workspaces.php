@@ -21,7 +21,7 @@ return [
     */
     'register_routes' => env('WORKSPACES_REGISTER_ROUTES', true),
     'route_prefix' => env('WORKSPACES_ROUTE_PREFIX', ''),
-    'route_middleware' => ['auth:sanctum'],
+    'route_middleware' => [], // auth:sanctum
 
     /*
     |--------------------------------------------------------------------------

@@ -15,6 +15,9 @@ class WorkspaceController extends Controller
     {
         $workspace = Workspace::findOrFail($workspaceId);
 
+        if (! auth()->user()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
         // Check if user has access to this workspace
         if (! auth()->user()->hasRole('workspace-member', Workspace::class, $workspace->id) &&
             ! auth()->user()->hasRole('workspace-owner', Workspace::class, $workspace->id) &&
@@ -154,7 +157,8 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $userModel = config('workspaces.user_model', 'App\\Models\\User');
+        dd(config()->all());
+        $userModel = config('eloquent-workspaces.user_model', 'App\\Models\\User');
         $user = $userModel::findOrFail($userId);
 
         // Remove all roles for this user in this workspace
