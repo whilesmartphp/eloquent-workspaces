@@ -1,4 +1,4 @@
-# Laravel Eloquent Workspaces
+# Eloquent Workspaces
 
 A comprehensive Laravel package for managing workspaces, invitations, and member roles.
 
