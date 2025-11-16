@@ -3,7 +3,7 @@
   "description": "Workspace management package for Laravel applications",
   "type": "library",
   "license": "MIT",
-  "package-version": "1.0.0",
+  "package-version": "1.0.1",
   "authors": [
     {
       "name": "WhileSmart",
