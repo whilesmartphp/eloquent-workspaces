@@ -1,5 +1,5 @@
 {
-  "name": "whilesmart/workspaces",
+  "name": "whilesmart/eloquent-workspaces",
   "description": "Workspace management package for Laravel applications",
   "type": "library",
   "license": "MIT",
