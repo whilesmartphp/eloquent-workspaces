@@ -26,14 +26,14 @@ class Workspace extends Model
     public function members()
     {
         return $this->hasManyThrough(
-            config('workspaces.user_model', 'App\\Models\\User'),
+            config('eloquent-workspaces.user_model', 'App\\Models\\User'),
             'Whilesmart\\Roles\\Models\\RoleAssignment',
             'context_id',
             'id',
             'id',
             'assignable_id'
         )->where('role_assignments.context_type', self::class)
-            ->where('role_assignments.assignable_type', config('workspaces.user_model', 'App\\Models\\User'));
+            ->where('role_assignments.assignable_type', config('eloquent-workspaces.user_model', 'App\\Models\\User'));
     }
 
     public function invitations(): HasMany

@@ -50,6 +50,6 @@ class WorkspaceInvitation extends Model
 
     protected function getUserModel(): string
     {
-        return config('workspaces.user_model', 'App\\Models\\User');
+        return config('eloquent-workspaces.user_model', 'App\\Models\\User');
     }
 }
