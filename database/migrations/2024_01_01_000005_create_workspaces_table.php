@@ -11,15 +11,20 @@ return new class extends Migration
         Schema::create('workspaces', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('slug')->unique();
             $table->text('description')->nullable();
-            $table->string('type')->default('team'); // personal, team
+            $table->string('type')->default('team');
+            $table->nullableMorphs('owner');
+            $table->boolean('is_personal')->default(false);
             $table->boolean('is_active')->default(true);
             $table->json('settings')->nullable();
+            $table->json('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['is_active']);
             $table->index(['type']);
+            $table->index(['is_personal']);
         });
     }
 
