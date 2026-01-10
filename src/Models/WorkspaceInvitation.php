@@ -36,6 +36,11 @@ class WorkspaceInvitation extends Model
 
     public const ROLE_MEMBER = 'member';
 
+    public static function generateToken(): string
+    {
+        return Str::random(64);
+    }
+
     protected static function booted(): void
     {
         static::creating(function (WorkspaceInvitation $invitation) {
@@ -91,6 +96,7 @@ class WorkspaceInvitation extends Model
         }
 
         $this->accepted_at = now();
+
         return $this->save();
     }
 
@@ -101,6 +107,7 @@ class WorkspaceInvitation extends Model
         }
 
         $this->declined_at = now();
+
         return $this->save();
     }
 

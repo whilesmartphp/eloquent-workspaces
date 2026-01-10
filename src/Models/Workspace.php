@@ -26,6 +26,11 @@ class Workspace extends Model
         'metadata',
     ];
 
+    protected $attributes = [
+        'is_active' => true,
+        'is_personal' => false,
+    ];
+
     protected $casts = [
         'is_personal' => 'boolean',
         'is_active' => 'boolean',
@@ -41,6 +46,7 @@ class Workspace extends Model
         return [
             'slug' => [
                 'source' => 'name',
+                'onUpdate' => false,
             ],
         ];
     }

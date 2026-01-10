@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('workspace_id')->constrained()->onDelete('cascade');
             $table->string('email');
             $table->string('role')->default('member');
-            $table->foreignId('invited_by_user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('invited_by_user_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->string('token')->unique();
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('accepted_at')->nullable();

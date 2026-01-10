@@ -169,13 +169,13 @@ class WorkspaceController extends Controller
             ->get()
             ->map(function ($member) {
                 $roleAssignment = $member->roleAssignments->first();
-                $role = $roleAssignment?->role->slug ?? 'workspace-member';
+                $role = $roleAssignment?->role->slug ?? 'member';
 
                 return [
                     'user_id' => $member->id,
                     'name' => $member->name,
                     'email' => $member->email,
-                    'role' => str_replace('workspace-', '', $role),
+                    'role' => $role,
                     'joined_at' => $roleAssignment?->created_at,
                 ];
             });
@@ -330,9 +330,9 @@ class WorkspaceController extends Controller
             return false;
         }
 
-        return $user->hasRole('workspace-member', Workspace::class, $workspace->id)
-            || $user->hasRole('workspace-owner', Workspace::class, $workspace->id)
-            || $user->hasRole('workspace-admin', Workspace::class, $workspace->id);
+        return $user->hasRole('member', Workspace::class, $workspace->id)
+            || $user->hasRole('owner', Workspace::class, $workspace->id)
+            || $user->hasRole('admin', Workspace::class, $workspace->id);
     }
 
     protected function userCanManage(Workspace $workspace): bool
@@ -343,8 +343,8 @@ class WorkspaceController extends Controller
             return false;
         }
 
-        return $user->hasRole('workspace-owner', Workspace::class, $workspace->id)
-            || $user->hasRole('workspace-admin', Workspace::class, $workspace->id);
+        return $user->hasRole('owner', Workspace::class, $workspace->id)
+            || $user->hasRole('admin', Workspace::class, $workspace->id);
     }
 
     protected function userIsOwner(Workspace $workspace): bool
@@ -355,6 +355,6 @@ class WorkspaceController extends Controller
             return false;
         }
 
-        return $user->hasRole('workspace-owner', Workspace::class, $workspace->id);
+        return $user->hasRole('owner', Workspace::class, $workspace->id);
     }
 }

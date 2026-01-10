@@ -61,23 +61,23 @@ return [
     | Role Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure workspace roles. These role slugs are prefixed with 'workspace-'
-    | when stored in the role_assignments table.
+    | Configure workspace roles. These roles are scoped to workspaces via
+    | the context_type and context_id columns in the role_assignments table.
     |
     */
     'roles' => [
         'owner' => [
-            'slug' => 'workspace-owner',
+            'slug' => 'owner',
             'name' => 'Owner',
             'permissions' => ['*'],
         ],
         'admin' => [
-            'slug' => 'workspace-admin',
+            'slug' => 'admin',
             'name' => 'Administrator',
             'permissions' => ['manage_members', 'manage_settings', 'manage_invitations'],
         ],
         'member' => [
-            'slug' => 'workspace-member',
+            'slug' => 'member',
             'name' => 'Member',
             'permissions' => ['view'],
         ],
