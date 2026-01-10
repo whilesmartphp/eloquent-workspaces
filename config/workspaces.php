@@ -7,9 +7,21 @@ return [
     |--------------------------------------------------------------------------
     |
     | The user model class that will be used for workspace relationships.
+    | This model should use the HasWorkspaces trait.
     |
     */
     'user_model' => env('WORKSPACES_USER_MODEL', 'App\\Models\\User'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Workspace Model
+    |--------------------------------------------------------------------------
+    |
+    | The workspace model class. Override this if you want to use a custom
+    | model that extends the base Workspace model.
+    |
+    */
+    'workspace_model' => env('WORKSPACES_MODEL', \Whilesmart\Workspaces\Models\Workspace::class),
 
     /*
     |--------------------------------------------------------------------------
@@ -20,19 +32,19 @@ return [
     |
     */
     'register_routes' => env('WORKSPACES_REGISTER_ROUTES', true),
-    'route_prefix' => env('WORKSPACES_ROUTE_PREFIX', ''),
-    'route_middleware' => [], // auth:sanctum
+    'route_prefix' => env('WORKSPACES_ROUTE_PREFIX', 'api'),
+    'route_middleware' => ['api'],
 
     /*
     |--------------------------------------------------------------------------
-    | Default Workspace Creation
+    | Personal Workspace Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure automatic workspace creation behavior.
+    | Configure automatic personal workspace creation behavior.
     |
     */
     'create_personal_workspace_on_registration' => env('WORKSPACES_AUTO_CREATE', true),
-    'personal_workspace_name_template' => "{first_name}'s Workspace",
+    'personal_workspace_name_template' => "{name}'s Workspace",
 
     /*
     |--------------------------------------------------------------------------
@@ -46,15 +58,52 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Permission Configuration
+    | Role Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure workspace permissions and roles.
+    | Configure workspace roles. These role slugs are prefixed with 'workspace-'
+    | when stored in the role_assignments table.
     |
     */
     'roles' => [
-        'owner' => 'owner',
-        'admin' => 'admin',
-        'member' => 'member',
+        'owner' => [
+            'slug' => 'workspace-owner',
+            'name' => 'Owner',
+            'permissions' => ['*'],
+        ],
+        'admin' => [
+            'slug' => 'workspace-admin',
+            'name' => 'Administrator',
+            'permissions' => ['manage_members', 'manage_settings', 'manage_invitations'],
+        ],
+        'member' => [
+            'slug' => 'workspace-member',
+            'name' => 'Member',
+            'permissions' => ['view'],
+        ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Workspace Types
+    |--------------------------------------------------------------------------
+    |
+    | Available workspace types. Personal workspaces are auto-created for users.
+    |
+    */
+    'types' => [
+        'personal' => 'Personal',
+        'team' => 'Team',
+        'organization' => 'Organization',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Soft Deletes
+    |--------------------------------------------------------------------------
+    |
+    | Enable or disable soft deletes for workspaces.
+    |
+    */
+    'soft_deletes' => true,
 ];
