@@ -58,7 +58,7 @@ trait HasWorkspaces
             'is_personal' => true,
         ]);
 
-        $this->joinWorkspace($workspace, 'workspace-owner');
+        $this->joinWorkspace($workspace, 'owner');
 
         return $workspace;
     }
@@ -71,12 +71,12 @@ trait HasWorkspaces
             'is_personal' => false,
         ], $attributes));
 
-        $this->joinWorkspace($workspace, 'workspace-owner');
+        $this->joinWorkspace($workspace, 'owner');
 
         return $workspace;
     }
 
-    public function joinWorkspace(Workspace $workspace, string $role = 'workspace-member'): void
+    public function joinWorkspace(Workspace $workspace, string $role = 'member'): void
     {
         if (method_exists($this, 'assignRole')) {
             $this->assignRole($role, Workspace::class, $workspace->id);
@@ -86,7 +86,7 @@ trait HasWorkspaces
     public function leaveWorkspace(Workspace $workspace): void
     {
         if (method_exists($this, 'removeRole')) {
-            $roles = ['workspace-owner', 'workspace-admin', 'workspace-member'];
+            $roles = ['owner', 'admin', 'member'];
             foreach ($roles as $role) {
                 $this->removeRole($role, Workspace::class, $workspace->id);
             }
@@ -118,8 +118,9 @@ trait HasWorkspaces
         if ($invitation->accept()) {
             $this->joinWorkspace(
                 $invitation->workspace,
-                'workspace-'.$invitation->role
+                $invitation->role
             );
+
             return true;
         }
 
