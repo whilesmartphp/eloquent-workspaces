@@ -5,6 +5,7 @@ namespace Whilesmart\Workspaces\Traits;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Whilesmart\Workspaces\Enums\Role;
 use Whilesmart\Workspaces\Enums\WorkspaceType;
+use Whilesmart\Workspaces\Events\WorkspaceSwitched;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 
@@ -137,5 +138,65 @@ trait HasWorkspaces
         }
 
         return $invitation->decline();
+    }
+
+    /**
+     * Switch to a workspace.
+     *
+     * This method dispatches a WorkspaceSwitched event and optionally persists
+     * the current workspace if the model implements setCurrentWorkspaceId().
+     *
+     * Apps can handle persistence by either:
+     * - Implementing setCurrentWorkspaceId($id) on the model
+     * - Listening to the WorkspaceSwitched event
+     * - Ignoring this entirely and managing context at the app level
+     */
+    public function switchWorkspace(Workspace $workspace): bool
+    {
+        if (! $this->belongsToWorkspace($workspace)) {
+            return false;
+        }
+
+        $previousWorkspace = $this->currentWorkspace();
+
+        if (method_exists($this, 'setCurrentWorkspaceId')) {
+            $this->setCurrentWorkspaceId($workspace->id);
+        }
+
+        WorkspaceSwitched::dispatch($workspace, $this, $previousWorkspace);
+
+        return true;
+    }
+
+    /**
+     * Get the current workspace.
+     *
+     * Returns null if no current workspace is set or if the model doesn't
+     * implement getCurrentWorkspaceId(). Apps can override this method
+     * or implement getCurrentWorkspaceId() to customize behavior.
+     */
+    public function currentWorkspace(): ?Workspace
+    {
+        if (! method_exists($this, 'getCurrentWorkspaceId')) {
+            return null;
+        }
+
+        $workspaceId = $this->getCurrentWorkspaceId();
+
+        if (! $workspaceId) {
+            return null;
+        }
+
+        return $this->workspaces()
+            ->where('workspaces.id', $workspaceId)
+            ->first();
+    }
+
+    /**
+     * Get the current workspace or fall back to the first available workspace.
+     */
+    public function currentOrDefaultWorkspace(): ?Workspace
+    {
+        return $this->currentWorkspace() ?? $this->workspaces()->first();
     }
 }
