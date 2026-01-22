@@ -9,6 +9,7 @@ use Whilesmart\Roles\Models\Role;
 use Whilesmart\Workspaces\Console\WorkspaceSetupCommand;
 use Whilesmart\Workspaces\Enums\Role as RoleEnum;
 use Whilesmart\Workspaces\Exceptions\WorkspaceSetupException;
+use Whilesmart\Workspaces\Models\Workspace;
 
 class WorkspacesServiceProvider extends ServiceProvider
 {
@@ -32,6 +33,8 @@ class WorkspacesServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'workspaces-migrations');
+
+        Route::model('workspace', Workspace::class);
 
         if (config('workspaces.register_routes', true)) {
             $this->registerRoutes();
