@@ -9,7 +9,6 @@ use Whilesmart\Roles\Models\Role;
 use Whilesmart\Workspaces\Console\WorkspaceSetupCommand;
 use Whilesmart\Workspaces\Enums\Role as RoleEnum;
 use Whilesmart\Workspaces\Exceptions\WorkspaceSetupException;
-use Whilesmart\Workspaces\Models\Workspace;
 
 class WorkspacesServiceProvider extends ServiceProvider
 {
@@ -34,8 +33,6 @@ class WorkspacesServiceProvider extends ServiceProvider
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'workspaces-migrations');
 
-        Route::model('workspace', Workspace::class);
-
         if (config('workspaces.register_routes', true)) {
             $this->registerRoutes();
         }
@@ -47,9 +44,17 @@ class WorkspacesServiceProvider extends ServiceProvider
 
     protected function registerRoutes(): void
     {
+        $middleware = config('workspaces.route_middleware', []);
+
+        if (! in_array(\Illuminate\Routing\Middleware\SubstituteBindings::class, $middleware)
+            && ! in_array('bindings', $middleware)
+            && ! in_array('api', $middleware)) {
+            $middleware[] = \Illuminate\Routing\Middleware\SubstituteBindings::class;
+        }
+
         Route::group([
             'prefix' => config('workspaces.route_prefix', 'api'),
-            'middleware' => config('workspaces.route_middleware', []),
+            'middleware' => $middleware,
         ], function () {
             $this->loadRoutesFrom(__DIR__.'/../routes/workspaces.php');
         });
