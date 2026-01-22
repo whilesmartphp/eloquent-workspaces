@@ -14,7 +14,11 @@ class MemberInvited
 
     public function __construct(
         public Workspace $workspace,
-        public WorkspaceInvitation $invitation,
-        public mixed $invitedBy = null
+        public WorkspaceInvitation $invitation
     ) {}
+
+    public function invitedBy(): mixed
+    {
+        return $this->invitation->invitedBy;
+    }
 }

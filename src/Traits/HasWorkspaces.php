@@ -3,6 +3,8 @@
 namespace Whilesmart\Workspaces\Traits;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Whilesmart\Workspaces\Enums\Role;
+use Whilesmart\Workspaces\Enums\WorkspaceType;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 
@@ -54,11 +56,11 @@ trait HasWorkspaces
 
         $workspace = $this->ownedWorkspaces()->create([
             'name' => $name ?? $defaultName,
-            'type' => 'personal',
+            'type' => WorkspaceType::PERSONAL->value,
             'is_personal' => true,
         ]);
 
-        $this->joinWorkspace($workspace, 'owner');
+        $this->joinWorkspace($workspace, Role::OWNER->value);
 
         return $workspace;
     }
@@ -67,17 +69,19 @@ trait HasWorkspaces
     {
         $workspace = $this->ownedWorkspaces()->create(array_merge([
             'name' => $name,
-            'type' => 'team',
+            'type' => WorkspaceType::default()->value,
             'is_personal' => false,
         ], $attributes));
 
-        $this->joinWorkspace($workspace, 'owner');
+        $this->joinWorkspace($workspace, Role::OWNER->value);
 
         return $workspace;
     }
 
-    public function joinWorkspace(Workspace $workspace, string $role = 'member'): void
+    public function joinWorkspace(Workspace $workspace, ?string $role = null): void
     {
+        $role = $role ?? Role::default()->value;
+
         if (method_exists($this, 'assignRole')) {
             $this->assignRole($role, Workspace::class, $workspace->id);
         }
@@ -86,8 +90,7 @@ trait HasWorkspaces
     public function leaveWorkspace(Workspace $workspace): void
     {
         if (method_exists($this, 'removeRole')) {
-            $roles = ['owner', 'admin', 'member'];
-            foreach ($roles as $role) {
+            foreach (Role::values() as $role) {
                 $this->removeRole($role, Workspace::class, $workspace->id);
             }
         }
