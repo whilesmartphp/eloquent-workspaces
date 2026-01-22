@@ -109,6 +109,8 @@ class WorkspaceApiTest extends TestCase
             ]);
 
         $this->assertEquals($workspace->id, $response->json('data.id'));
+        $this->assertEquals($workspace->name, $response->json('data.name'));
+        $this->assertEquals($workspace->slug, $response->json('data.slug'));
     }
 
     #[Test]
