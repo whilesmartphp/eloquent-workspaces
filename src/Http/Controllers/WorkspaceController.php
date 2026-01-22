@@ -6,6 +6,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
+use Whilesmart\Workspaces\Enums\Role;
+use Whilesmart\Workspaces\Enums\WorkspaceType;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 
@@ -38,10 +40,12 @@ class WorkspaceController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $creatableTypes = implode(',', WorkspaceType::creatableValues());
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
-            'type' => 'nullable|string|in:team,organization',
+            'type' => "nullable|string|in:{$creatableTypes}",
         ]);
 
         if ($validator->fails()) {
@@ -151,7 +155,7 @@ class WorkspaceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Workspace deleted successfully',
-        ]);
+        ], 204);
     }
 
     public function members(Workspace $workspace): JsonResponse
@@ -169,7 +173,7 @@ class WorkspaceController extends Controller
             ->get()
             ->map(function ($member) {
                 $roleAssignment = $member->roleAssignments->first();
-                $role = $roleAssignment?->role->slug ?? 'member';
+                $role = $roleAssignment?->role->slug ?? Role::default()->value;
 
                 return [
                     'user_id' => $member->id,
@@ -188,9 +192,11 @@ class WorkspaceController extends Controller
 
     public function inviteMember(Request $request, Workspace $workspace): JsonResponse
     {
+        $invitableRoles = implode(',', [Role::MEMBER->value, Role::ADMIN->value]);
+
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'role' => 'required|in:member,admin',
+            'role' => "required|in:{$invitableRoles}",
         ]);
 
         if ($validator->fails()) {
@@ -330,9 +336,13 @@ class WorkspaceController extends Controller
             return false;
         }
 
-        return $user->hasRole('member', Workspace::class, $workspace->id)
-            || $user->hasRole('owner', Workspace::class, $workspace->id)
-            || $user->hasRole('admin', Workspace::class, $workspace->id);
+        foreach (Role::cases() as $role) {
+            if ($role->canAccess() && $user->hasRole($role->value, Workspace::class, $workspace->id)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function userCanManage(Workspace $workspace): bool
@@ -343,8 +353,13 @@ class WorkspaceController extends Controller
             return false;
         }
 
-        return $user->hasRole('owner', Workspace::class, $workspace->id)
-            || $user->hasRole('admin', Workspace::class, $workspace->id);
+        foreach (Role::cases() as $role) {
+            if ($role->canManage() && $user->hasRole($role->value, Workspace::class, $workspace->id)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function userIsOwner(Workspace $workspace): bool
@@ -355,6 +370,6 @@ class WorkspaceController extends Controller
             return false;
         }
 
-        return $user->hasRole('owner', Workspace::class, $workspace->id);
+        return $user->hasRole(Role::OWNER->value, Workspace::class, $workspace->id);
     }
 }

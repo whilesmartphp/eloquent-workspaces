@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Whilesmart\Workspaces\Enums\Role;
 
 class WorkspaceInvitation extends Model
 {
@@ -30,10 +31,13 @@ class WorkspaceInvitation extends Model
         'updated_at' => 'datetime',
     ];
 
+    /** @deprecated Use Role::OWNER->value instead */
     public const ROLE_OWNER = 'owner';
 
+    /** @deprecated Use Role::ADMIN->value instead */
     public const ROLE_ADMIN = 'admin';
 
+    /** @deprecated Use Role::MEMBER->value instead */
     public const ROLE_MEMBER = 'member';
 
     public static function generateToken(): string

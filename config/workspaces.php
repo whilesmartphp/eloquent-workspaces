@@ -1,5 +1,9 @@
 <?php
 
+use Whilesmart\Workspaces\Enums\Permission;
+use Whilesmart\Workspaces\Enums\Role;
+use Whilesmart\Workspaces\Enums\WorkspaceType;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -64,22 +68,29 @@ return [
     | Configure workspace roles. These roles are scoped to workspaces via
     | the context_type and context_id columns in the role_assignments table.
     |
+    | Note: The core roles (owner, admin, member) are defined in the Role enum
+    | and cannot be removed. You can add additional custom roles here.
+    |
     */
     'roles' => [
-        'owner' => [
-            'slug' => 'owner',
-            'name' => 'Owner',
-            'permissions' => ['*'],
+        Role::OWNER->value => [
+            'slug' => Role::OWNER->value,
+            'name' => Role::OWNER->label(),
+            'permissions' => [Permission::ALL->value],
         ],
-        'admin' => [
-            'slug' => 'admin',
-            'name' => 'Administrator',
-            'permissions' => ['manage_members', 'manage_settings', 'manage_invitations'],
+        Role::ADMIN->value => [
+            'slug' => Role::ADMIN->value,
+            'name' => Role::ADMIN->label(),
+            'permissions' => [
+                Permission::MANAGE_MEMBERS->value,
+                Permission::MANAGE_SETTINGS->value,
+                Permission::MANAGE_INVITATIONS->value,
+            ],
         ],
-        'member' => [
-            'slug' => 'member',
-            'name' => 'Member',
-            'permissions' => ['view'],
+        Role::MEMBER->value => [
+            'slug' => Role::MEMBER->value,
+            'name' => Role::MEMBER->label(),
+            'permissions' => [Permission::VIEW->value],
         ],
     ],
 
@@ -90,11 +101,14 @@ return [
     |
     | Available workspace types. Personal workspaces are auto-created for users.
     |
+    | Note: The core types (personal, team, organization) are defined in the
+    | WorkspaceType enum. You can add additional custom types here.
+    |
     */
     'types' => [
-        'personal' => 'Personal',
-        'team' => 'Team',
-        'organization' => 'Organization',
+        WorkspaceType::PERSONAL->value => WorkspaceType::PERSONAL->label(),
+        WorkspaceType::TEAM->value => WorkspaceType::TEAM->label(),
+        WorkspaceType::ORGANIZATION->value => WorkspaceType::ORGANIZATION->label(),
     ],
 
     /*
