@@ -142,11 +142,7 @@ class WorkspaceApiTest extends TestCase
 
         $response = $this->actingAs($user)->deleteJson("/workspaces/{$workspace->slug}");
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Workspace deleted successfully',
-            ]);
+        $response->assertNoContent();
 
         $this->assertSoftDeleted('workspaces', ['id' => $workspace->id]);
     }

@@ -23,6 +23,7 @@ Route::get('/workspaces/{workspace}/members', [WorkspaceController::class, 'memb
 Route::post('/workspaces/{workspace}/members/invite', [WorkspaceController::class, 'inviteMember']);
 Route::delete('/workspaces/{workspace}/members/{userId}', [WorkspaceController::class, 'removeMember']);
 Route::post('/workspaces/{workspace}/leave', [WorkspaceController::class, 'leave']);
+Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switchTo']);
 
 Route::get('/workspaces/{workspace}/invitations', [WorkspaceController::class, 'invitations']);
 Route::delete('/workspaces/{workspace}/invitations/{invitation}', [WorkspaceController::class, 'cancelInvitation']);

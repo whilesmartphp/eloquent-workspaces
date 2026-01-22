@@ -328,6 +328,42 @@ class WorkspaceController extends Controller
         ]);
     }
 
+    /**
+     * Switch to a workspace.
+     *
+     * This endpoint is optional - apps can handle workspace context switching
+     * entirely at the application level if preferred. The actual persistence
+     * of the current workspace depends on the model implementing
+     * setCurrentWorkspaceId()/getCurrentWorkspaceId() methods.
+     */
+    public function switchTo(Workspace $workspace): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        if (! $this->userCanAccess($workspace)) {
+            return response()->json(['error' => 'You do not have access to this workspace'], 403);
+        }
+
+        if (method_exists($user, 'switchWorkspace')) {
+            $user->switchWorkspace($workspace);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Switched to workspace',
+            'data' => [
+                'id' => $workspace->id,
+                'slug' => $workspace->slug,
+                'name' => $workspace->name,
+                'type' => $workspace->type,
+            ],
+        ]);
+    }
+
     protected function userCanAccess(Workspace $workspace): bool
     {
         $user = auth()->user();
