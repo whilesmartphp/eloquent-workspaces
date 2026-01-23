@@ -56,11 +56,29 @@ class WorkspaceApiTest extends TestCase
             ->assertJsonStructure([
                 'success',
                 'data' => [
-                    '*' => ['id', 'name', 'slug', 'type'],
+                    '*' => ['id', 'name', 'slug', 'type', 'role'],
                 ],
             ]);
 
         $this->assertCount(2, $response->json('data'));
+    }
+
+    #[Test]
+    public function workspace_list_includes_user_role()
+    {
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $member = $this->createUser(['email' => 'member@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+
+        $member->joinWorkspace($workspace, 'member');
+
+        $ownerResponse = $this->actingAs($owner)->getJson('/workspaces');
+        $ownerResponse->assertStatus(200);
+        $this->assertEquals('owner', $ownerResponse->json('data.0.role'));
+
+        $memberResponse = $this->actingAs($member)->getJson('/workspaces');
+        $memberResponse->assertStatus(200);
+        $this->assertEquals('member', $memberResponse->json('data.0.role'));
     }
 
     #[Test]
@@ -104,6 +122,7 @@ class WorkspaceApiTest extends TestCase
                     'description',
                     'type',
                     'is_active',
+                    'role',
                     'created_at',
                 ],
             ]);
@@ -111,6 +130,24 @@ class WorkspaceApiTest extends TestCase
         $this->assertEquals($workspace->id, $response->json('data.id'));
         $this->assertEquals($workspace->name, $response->json('data.name'));
         $this->assertEquals($workspace->slug, $response->json('data.slug'));
+    }
+
+    #[Test]
+    public function workspace_details_includes_user_role()
+    {
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $member = $this->createUser(['email' => 'member@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+
+        $member->joinWorkspace($workspace, 'member');
+
+        $ownerResponse = $this->actingAs($owner)->getJson("/workspaces/{$workspace->slug}");
+        $ownerResponse->assertStatus(200);
+        $this->assertEquals('owner', $ownerResponse->json('data.role'));
+
+        $memberResponse = $this->actingAs($member)->getJson("/workspaces/{$workspace->slug}");
+        $memberResponse->assertStatus(200);
+        $this->assertEquals('member', $memberResponse->json('data.role'));
     }
 
     #[Test]
