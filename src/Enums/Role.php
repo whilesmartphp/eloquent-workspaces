@@ -59,4 +59,21 @@ enum Role: string
     {
         return $this === self::OWNER;
     }
+
+    public function precedence(): int
+    {
+        return match ($this) {
+            self::OWNER => 3,
+            self::ADMIN => 2,
+            self::MEMBER => 1,
+        };
+    }
+
+    public static function byPrecedence(): array
+    {
+        $roles = self::cases();
+        usort($roles, fn ($a, $b) => $b->precedence() <=> $a->precedence());
+
+        return $roles;
+    }
 }

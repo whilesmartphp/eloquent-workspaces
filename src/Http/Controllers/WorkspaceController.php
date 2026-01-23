@@ -29,6 +29,7 @@ class WorkspaceController extends Controller
             'type' => $workspace->type,
             'is_personal' => $workspace->is_personal,
             'is_active' => $workspace->is_active,
+            'role' => $this->getUserRole($workspace),
             'created_at' => $workspace->created_at,
         ]);
 
@@ -95,6 +96,7 @@ class WorkspaceController extends Controller
                 'type' => $workspace->type,
                 'is_personal' => $workspace->is_personal,
                 'is_active' => $workspace->is_active,
+                'role' => $this->getUserRole($workspace),
                 'settings' => $workspace->settings,
                 'created_at' => $workspace->created_at,
                 'owner' => $workspace->owner ? [
@@ -407,5 +409,22 @@ class WorkspaceController extends Controller
         }
 
         return $user->hasRole(Role::OWNER->value, Workspace::class, $workspace->id);
+    }
+
+    protected function getUserRole(Workspace $workspace): ?string
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        foreach (Role::byPrecedence() as $role) {
+            if ($user->hasRole($role->value, Workspace::class, $workspace->id)) {
+                return $role->value;
+            }
+        }
+
+        return null;
     }
 }
