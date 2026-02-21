@@ -9,10 +9,13 @@ use Whilesmart\Workspaces\Models\Workspace;
 
 class WorkspaceCreated
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public Workspace $workspace,
         public mixed $owner = null
-    ) {}
+    ) {
+    }
 }

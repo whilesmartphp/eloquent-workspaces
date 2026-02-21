@@ -14,23 +14,23 @@ class WorkspacesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/workspaces.php', 'workspaces');
+        $this->mergeConfigFrom(__DIR__ . '/../config/workspaces.php', 'workspaces');
     }
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         if ($this->app->runningInConsole()) {
             $this->commands([WorkspaceSetupCommand::class]);
         }
 
         $this->publishes([
-            __DIR__.'/../config/workspaces.php' => config_path('workspaces.php'),
+            __DIR__ . '/../config/workspaces.php' => config_path('workspaces.php'),
         ], 'workspaces-config');
 
         $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'workspaces-migrations');
 
         if (config('workspaces.register_routes', true)) {
@@ -46,9 +46,11 @@ class WorkspacesServiceProvider extends ServiceProvider
     {
         $middleware = config('workspaces.route_middleware', []);
 
-        if (! in_array(\Illuminate\Routing\Middleware\SubstituteBindings::class, $middleware)
+        if (
+            ! in_array(\Illuminate\Routing\Middleware\SubstituteBindings::class, $middleware)
             && ! in_array('bindings', $middleware)
-            && ! in_array('api', $middleware)) {
+            && ! in_array('api', $middleware)
+        ) {
             $middleware[] = \Illuminate\Routing\Middleware\SubstituteBindings::class;
         }
 
@@ -56,7 +58,7 @@ class WorkspacesServiceProvider extends ServiceProvider
             'prefix' => config('workspaces.route_prefix', 'api'),
             'middleware' => $middleware,
         ], function () {
-            $this->loadRoutesFrom(__DIR__.'/../routes/workspaces.php');
+            $this->loadRoutesFrom(__DIR__ . '/../routes/workspaces.php');
         });
     }
 
@@ -76,7 +78,7 @@ class WorkspacesServiceProvider extends ServiceProvider
 
         if (! empty($missingRoles)) {
             throw new WorkspaceSetupException(
-                'Workspace roles not configured. Missing roles: '.implode(', ', $missingRoles).
+                'Workspace roles not configured. Missing roles: ' . implode(', ', $missingRoles) .
                 '. Run: php artisan workspace:setup'
             );
         }

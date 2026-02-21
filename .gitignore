@@ -4,3 +4,4 @@ vendor/
 .phpunit.result.cache
 workbench/storage
 .vscode
+reports/

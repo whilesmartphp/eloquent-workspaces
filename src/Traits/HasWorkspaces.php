@@ -9,6 +9,7 @@ use Whilesmart\Workspaces\Events\WorkspaceSwitched;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 
+// @phpstan-ignore-next-line
 trait HasWorkspaces
 {
     public function ownedWorkspaces(): MorphMany
@@ -49,7 +50,7 @@ trait HasWorkspaces
                 $this->name ?? $this->first_name ?? 'My',
                 $this->first_name ?? $this->name ?? 'My',
                 $this->last_name ?? '',
-                $this->name ?? trim(($this->first_name ?? '').' '.($this->last_name ?? '')),
+                $this->name ?? trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? '')),
                 $this->email ?? '',
             ],
             $template

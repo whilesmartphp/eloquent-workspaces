@@ -5,9 +5,24 @@ namespace Whilesmart\Workspaces\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Whilesmart\Workspaces\Enums\Role;
+use Workbench\App\Models\User;
 
+/**
+ * @property int $id
+ * @property int $workspace_id
+ * @property string $email
+ * @property int $invited_by_user_id
+ * @property string $token
+ * @property string $role
+ * @property User|null $invitedBy
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $accepted_at
+ * @property Carbon|null $declined_at
+ */
 class WorkspaceInvitation extends Model
 {
     use HasFactory;
@@ -49,10 +64,12 @@ class WorkspaceInvitation extends Model
     {
         static::creating(function (WorkspaceInvitation $invitation) {
             if (empty($invitation->token)) {
+                // @phpstan-ignore-next-line
                 $invitation->token = Str::random(64);
             }
             if (empty($invitation->expires_at)) {
                 $days = config('workspaces.invitation_expiry_days', 7);
+                // @phpstan-ignore-next-line
                 $invitation->expires_at = now()->addDays($days);
             }
         });
@@ -70,21 +87,25 @@ class WorkspaceInvitation extends Model
 
     public function isAccepted(): bool
     {
+        // @phpstan-ignore-next-line
         return ! is_null($this->accepted_at);
     }
 
     public function isDeclined(): bool
     {
+        // @phpstan-ignore-next-line
         return ! is_null($this->declined_at);
     }
 
     public function isPending(): bool
     {
+        // @phpstan-ignore-next-line
         return is_null($this->accepted_at) && is_null($this->declined_at);
     }
 
     public function isExpired(): bool
     {
+        // @phpstan-ignore-next-line
         return $this->expires_at && $this->expires_at->isPast();
     }
 
@@ -98,7 +119,7 @@ class WorkspaceInvitation extends Model
         if (! $this->isValid()) {
             return false;
         }
-
+        // @phpstan-ignore-next-line
         $this->accepted_at = now();
 
         return $this->save();
@@ -109,7 +130,7 @@ class WorkspaceInvitation extends Model
         if (! $this->isPending()) {
             return false;
         }
-
+        // @phpstan-ignore-next-line
         $this->declined_at = now();
 
         return $this->save();

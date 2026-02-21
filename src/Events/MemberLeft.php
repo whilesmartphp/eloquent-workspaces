@@ -9,10 +9,13 @@ use Whilesmart\Workspaces\Models\Workspace;
 
 class MemberLeft
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public Workspace $workspace,
         public mixed $member
-    ) {}
+    ) {
+    }
 }
