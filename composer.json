@@ -60,9 +60,6 @@
     "pint:test": [
       "./vendor/bin/pint --preset psr12 --test"
     ],
-    "lint": [
-      "@php vendor/bin/pint --ansi"
-    ],
     "phpmd": [
       "vendor/bin/phpmd src text phpmd.xml"
     ],
