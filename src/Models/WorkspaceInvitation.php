@@ -5,6 +5,8 @@ namespace Whilesmart\Workspaces\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
+use Whilesmart\Workspaces\Enums\Role;
 
 class WorkspaceInvitation extends Model
 {
@@ -15,18 +17,46 @@ class WorkspaceInvitation extends Model
         'email',
         'role',
         'invited_by_user_id',
+        'token',
+        'expires_at',
         'accepted_at',
+        'declined_at',
     ];
 
     protected $casts = [
+        'expires_at' => 'datetime',
+        'accepted_at' => 'datetime',
+        'declined_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'accepted_at' => 'datetime',
     ];
 
-    const ROLE_ADMIN = 'admin';
+    /** @deprecated Use Role::OWNER->value instead */
+    public const ROLE_OWNER = 'owner';
 
-    const ROLE_MEMBER = 'member';
+    /** @deprecated Use Role::ADMIN->value instead */
+    public const ROLE_ADMIN = 'admin';
+
+    /** @deprecated Use Role::MEMBER->value instead */
+    public const ROLE_MEMBER = 'member';
+
+    public static function generateToken(): string
+    {
+        return Str::random(64);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (WorkspaceInvitation $invitation) {
+            if (empty($invitation->token)) {
+                $invitation->token = Str::random(64);
+            }
+            if (empty($invitation->expires_at)) {
+                $days = config('workspaces.invitation_expiry_days', 7);
+                $invitation->expires_at = now()->addDays($days);
+            }
+        });
+    }
 
     public function workspace(): BelongsTo
     {
@@ -43,9 +73,46 @@ class WorkspaceInvitation extends Model
         return ! is_null($this->accepted_at);
     }
 
+    public function isDeclined(): bool
+    {
+        return ! is_null($this->declined_at);
+    }
+
     public function isPending(): bool
     {
-        return is_null($this->accepted_at);
+        return is_null($this->accepted_at) && is_null($this->declined_at);
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at && $this->expires_at->isPast();
+    }
+
+    public function isValid(): bool
+    {
+        return $this->isPending() && ! $this->isExpired();
+    }
+
+    public function accept(): bool
+    {
+        if (! $this->isValid()) {
+            return false;
+        }
+
+        $this->accepted_at = now();
+
+        return $this->save();
+    }
+
+    public function decline(): bool
+    {
+        if (! $this->isPending()) {
+            return false;
+        }
+
+        $this->declined_at = now();
+
+        return $this->save();
     }
 
     protected function getUserModel(): string

@@ -2,26 +2,64 @@
 
 namespace Whilesmart\Workspaces\Models;
 
+use Cviebrock\EloquentSluggable\Sluggable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Workspace extends Model
 {
-    use HasFactory;
+    use HasFactory, Sluggable, SoftDeletes;
 
     protected $fillable = [
         'name',
+        'slug',
         'description',
         'type',
+        'owner_type',
+        'owner_id',
+        'is_personal',
         'is_active',
         'settings',
+        'metadata',
+    ];
+
+    protected $attributes = [
+        'is_active' => true,
+        'is_personal' => false,
     ];
 
     protected $casts = [
+        'is_personal' => 'boolean',
+        'is_active' => 'boolean',
+        'settings' => 'array',
+        'metadata' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
+
+    public function sluggable(): array
+    {
+        return [
+            'slug' => [
+                'source' => 'name',
+                'onUpdate' => false,
+            ],
+        ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
     public function members()
     {
@@ -39,6 +77,17 @@ class Workspace extends Model
     public function invitations(): HasMany
     {
         return $this->hasMany(WorkspaceInvitation::class);
+    }
+
+    public function pendingInvitations(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvitation::class)
+            ->whereNull('accepted_at')
+            ->whereNull('declined_at')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            });
     }
 
     public function roleAssignments()
@@ -71,5 +120,32 @@ class Workspace extends Model
                     ->where('context_id', $this->id);
             })
             ->get();
+    }
+
+    public function isOwnedBy(Model $owner): bool
+    {
+        return $this->owner_type === get_class($owner)
+            && $this->owner_id === $owner->getKey();
+    }
+
+    public function hasMember(Model $user): bool
+    {
+        return $this->members()
+            ->where('users.id', $user->getKey())
+            ->exists();
+    }
+
+    public function getSetting(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->settings, $key, $default);
+    }
+
+    public function setSetting(string $key, mixed $value): self
+    {
+        $settings = $this->settings ?? [];
+        data_set($settings, $key, $value);
+        $this->settings = $settings;
+
+        return $this;
     }
 }

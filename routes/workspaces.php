@@ -8,14 +8,22 @@ use Whilesmart\Workspaces\Http\Controllers\WorkspaceController;
 | Workspaces API Routes
 |--------------------------------------------------------------------------
 |
-| Here are the API routes for workspace management. These routes are
-| automatically registered by the WorkspacesServiceProvider.
+| API routes for workspace management. These routes are automatically
+| registered by the WorkspacesServiceProvider when enabled in config.
 |
 */
 
-// Workspace Management
-Route::get('/workspaces/{workspaceId}', [WorkspaceController::class, 'show']);
-Route::put('/workspaces/{workspaceId}', [WorkspaceController::class, 'update']);
-Route::get('/workspaces/{workspaceId}/members', [WorkspaceController::class, 'members']);
-Route::post('/workspaces/{workspaceId}/members/invite', [WorkspaceController::class, 'inviteMember']);
-Route::delete('/workspaces/{workspaceId}/members/{userId}', [WorkspaceController::class, 'removeMember']);
+Route::get('/workspaces', [WorkspaceController::class, 'index']);
+Route::post('/workspaces', [WorkspaceController::class, 'store']);
+Route::get('/workspaces/{workspace}', [WorkspaceController::class, 'show']);
+Route::put('/workspaces/{workspace}', [WorkspaceController::class, 'update']);
+Route::delete('/workspaces/{workspace}', [WorkspaceController::class, 'destroy']);
+
+Route::get('/workspaces/{workspace}/members', [WorkspaceController::class, 'members']);
+Route::post('/workspaces/{workspace}/members/invite', [WorkspaceController::class, 'inviteMember']);
+Route::delete('/workspaces/{workspace}/members/{userId}', [WorkspaceController::class, 'removeMember']);
+Route::post('/workspaces/{workspace}/leave', [WorkspaceController::class, 'leave']);
+Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switchTo']);
+
+Route::get('/workspaces/{workspace}/invitations', [WorkspaceController::class, 'invitations']);
+Route::delete('/workspaces/{workspace}/invitations/{invitation}', [WorkspaceController::class, 'cancelInvitation']);

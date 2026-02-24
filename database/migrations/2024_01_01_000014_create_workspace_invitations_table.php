@@ -13,13 +13,16 @@ return new class extends Migration
             $table->foreignId('workspace_id')->constrained()->onDelete('cascade');
             $table->string('email');
             $table->string('role')->default('member');
-            $table->foreignId('invited_by_user_id')->constrained('users')->onDelete('cascade');
-            $table->string('status')->default('pending');
-            $table->string('token')->unique()->nullable();
+            $table->foreignId('invited_by_user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->string('token')->unique();
             $table->timestamp('expires_at')->nullable();
+            $table->timestamp('accepted_at')->nullable();
+            $table->timestamp('declined_at')->nullable();
             $table->timestamps();
 
             $table->unique(['workspace_id', 'email']);
+            $table->index(['email']);
+            $table->index(['token']);
         });
     }
 

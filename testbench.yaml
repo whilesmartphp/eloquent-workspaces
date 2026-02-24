@@ -1,6 +1,7 @@
 laravel: '@testbench'
 
 providers:
+  - Whilesmart\Roles\RolesServiceProvider
   - Whilesmart\Workspaces\WorkspacesServiceProvider
 
 migrations:

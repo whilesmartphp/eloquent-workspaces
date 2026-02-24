@@ -3,7 +3,7 @@
   "description": "Workspace management package for Laravel applications",
   "type": "library",
   "license": "MIT",
-  "package-version": "1.0.1",
+  "package-version": "1.0.2",
   "authors": [
     {
       "name": "WhileSmart",
@@ -35,6 +35,7 @@
   },
   "autoload-dev": {
     "psr-4": {
+      "Tests\\": "tests/",
       "Workbench\\App\\": "workbench/app/"
     }
   },
