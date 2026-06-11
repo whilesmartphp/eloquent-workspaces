@@ -1,3 +1,8 @@
+## [1.0.3] - 2026-06-11
+
+### Fixed
+- The `workspace_model` config was advertised but ignored; it is now honoured by the `HasWorkspaces` relations, role-context queries, and route-model binding, so a host app's `Workspace` subclass is used everywhere (no re-resolving)
+
 ## [1.0.2] - 2026-02-24
 
 ### Added
