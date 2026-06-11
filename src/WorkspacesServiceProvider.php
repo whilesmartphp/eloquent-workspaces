@@ -33,6 +33,8 @@ class WorkspacesServiceProvider extends ServiceProvider
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'workspaces-migrations');
 
+        Route::model('workspace', config('workspaces.workspace_model', \Whilesmart\Workspaces\Models\Workspace::class));
+
         if (config('workspaces.register_routes', true)) {
             $this->registerRoutes();
         }

@@ -11,22 +11,27 @@ use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 
 trait HasWorkspaces
 {
+    public static function workspaceModel(): string
+    {
+        return config('workspaces.workspace_model', Workspace::class);
+    }
+
     public function ownedWorkspaces(): MorphMany
     {
-        return $this->morphMany(Workspace::class, 'owner');
+        return $this->morphMany(static::workspaceModel(), 'owner');
     }
 
     public function workspaces()
     {
         return $this->hasManyThrough(
-            Workspace::class,
+            static::workspaceModel(),
             'Whilesmart\\Roles\\Models\\RoleAssignment',
             'assignable_id',
             'id',
             'id',
             'context_id'
         )->where('role_assignments.assignable_type', static::class)
-            ->where('role_assignments.context_type', Workspace::class);
+            ->where('role_assignments.context_type', static::workspaceModel());
     }
 
     public function pendingWorkspaceInvitations()
@@ -84,7 +89,7 @@ trait HasWorkspaces
         $role = $role ?? Role::default()->value;
 
         if (method_exists($this, 'assignRole')) {
-            $this->assignRole($role, Workspace::class, $workspace->id);
+            $this->assignRole($role, static::workspaceModel(), $workspace->id);
         }
     }
 
@@ -92,7 +97,7 @@ trait HasWorkspaces
     {
         if (method_exists($this, 'removeRole')) {
             foreach (Role::values() as $role) {
-                $this->removeRole($role, Workspace::class, $workspace->id);
+                $this->removeRole($role, static::workspaceModel(), $workspace->id);
             }
         }
     }

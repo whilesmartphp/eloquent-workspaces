@@ -20,12 +20,37 @@ All package configuration is environment-driven. Add these variables to your `.e
 # The user model class that will be used for workspace relationships.
 WORKSPACES_USER_MODEL=App\\Models\\User
 
+# The workspace model class. Point this at your own subclass (extending the
+# base Workspace model) to compose extra traits/behaviour; it is honoured by
+# the HasWorkspaces relations, role-context queries, and route-model binding.
+WORKSPACES_MODEL=App\\Models\\Workspace
+
 # Enable or disable route registration (default: true)
 WORKSPACES_REGISTER_ROUTES=true
 
 # Route prefix for all workspace endpoints (default: api)
 WORKSPACES_ROUTE_PREFIX=api
 ```
+
+### Custom workspace model
+
+```php
+// config/workspaces.php
+'workspace_model' => App\Models\Workspace::class,
+```
+
+```php
+use Whilesmart\Workspaces\Models\Workspace as BaseWorkspace;
+
+class Workspace extends BaseWorkspace
+{
+    // compose your own capabilities (HasInvoices, HasBrands, Configurable, …)
+}
+```
+
+With this set, `$user->workspaces()`, `currentOrDefaultWorkspace()`, route-bound
+`{workspace}` params, and role checks all return / use your subclass — no
+re-resolving in the host app.
 
 ### Workspace Settings
 ```bash
