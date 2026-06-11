@@ -21,8 +21,10 @@ return [
     | Workspace Model
     |--------------------------------------------------------------------------
     |
-    | The workspace model class. Override this if you want to use a custom
-    | model that extends the base Workspace model.
+    | The workspace model class. Point this at your own subclass (extending the
+    | base Workspace model) to compose extra traits/behaviour. It is honoured by
+    | the HasWorkspaces relations, role-context queries, and route-model binding,
+    | so the host app's model is used everywhere without re-resolving.
     |
     */
     'workspace_model' => env('WORKSPACES_MODEL', \Whilesmart\Workspaces\Models\Workspace::class),
