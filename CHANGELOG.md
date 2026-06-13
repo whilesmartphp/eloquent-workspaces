@@ -1,3 +1,9 @@
+## [1.1.0] - 2026-06-13
+
+### Added
+- Invitation accept and decline API endpoints, so an invited user can join (or turn down) a workspace through the same path that issues the invite
+- `MemberInvited` and `MemberJoined` events are now dispatched (on invite and on accept), letting host apps react -- for example to send an invitation email
+
 ## [1.0.3] - 2026-06-11
 
 ### Fixed

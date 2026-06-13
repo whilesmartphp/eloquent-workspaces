@@ -27,3 +27,6 @@ Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'swit
 
 Route::get('/workspaces/{workspace}/invitations', [WorkspaceController::class, 'invitations']);
 Route::delete('/workspaces/{workspace}/invitations/{invitation}', [WorkspaceController::class, 'cancelInvitation']);
+
+Route::post('/workspaces/invitations/{token}/accept', [WorkspaceController::class, 'acceptInvitation']);
+Route::post('/workspaces/invitations/{token}/decline', [WorkspaceController::class, 'declineInvitation']);
