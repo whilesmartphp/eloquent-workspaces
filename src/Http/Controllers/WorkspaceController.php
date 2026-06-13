@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
 use Whilesmart\Workspaces\Enums\Role;
 use Whilesmart\Workspaces\Enums\WorkspaceType;
+use Whilesmart\Workspaces\Events\MemberInvited;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 
@@ -231,6 +232,8 @@ class WorkspaceController extends Controller
             'invited_by_user_id' => auth()->id(),
         ]);
 
+        MemberInvited::dispatch($workspace, $invitation);
+
         return response()->json([
             'success' => true,
             'message' => 'Invitation sent successfully',
@@ -282,6 +285,74 @@ class WorkspaceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Invitation cancelled',
+        ]);
+    }
+
+    public function acceptInvitation(string $token): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $invitation = WorkspaceInvitation::where('token', $token)->firstOrFail();
+
+        if ($invitation->email !== $user->email) {
+            return response()->json(['error' => 'This invitation was sent to a different email address'], 403);
+        }
+
+        if (! $invitation->isValid()) {
+            $reason = $invitation->isExpired()
+                ? 'This invitation has expired'
+                : 'This invitation has already been actioned';
+
+            return response()->json(['error' => $reason], 422);
+        }
+
+        if (! $user->acceptInvitation($invitation)) {
+            return response()->json(['error' => 'Unable to accept invitation'], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Invitation accepted',
+            'data' => [
+                'workspace' => [
+                    'id' => $invitation->workspace->id,
+                    'slug' => $invitation->workspace->slug,
+                    'name' => $invitation->workspace->name,
+                ],
+                'role' => $invitation->role,
+            ],
+        ]);
+    }
+
+    public function declineInvitation(string $token): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $invitation = WorkspaceInvitation::where('token', $token)->firstOrFail();
+
+        if ($invitation->email !== $user->email) {
+            return response()->json(['error' => 'This invitation was sent to a different email address'], 403);
+        }
+
+        if (! $invitation->isPending()) {
+            return response()->json(['error' => 'This invitation has already been actioned'], 422);
+        }
+
+        if (! $user->declineInvitation($invitation)) {
+            return response()->json(['error' => 'Unable to decline invitation'], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Invitation declined',
         ]);
     }
 

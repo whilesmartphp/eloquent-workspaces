@@ -5,6 +5,7 @@ namespace Whilesmart\Workspaces\Traits;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Whilesmart\Workspaces\Enums\Role;
 use Whilesmart\Workspaces\Enums\WorkspaceType;
+use Whilesmart\Workspaces\Events\MemberJoined;
 use Whilesmart\Workspaces\Events\WorkspaceSwitched;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
@@ -129,6 +130,8 @@ trait HasWorkspaces
                 $invitation->workspace,
                 $invitation->role
             );
+
+            MemberJoined::dispatch($invitation->workspace, $this, $invitation->role);
 
             return true;
         }
