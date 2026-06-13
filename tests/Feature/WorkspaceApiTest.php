@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Whilesmart\Roles\Models\Role;
 use Whilesmart\Roles\Models\RoleAssignment;
+use Whilesmart\Workspaces\Events\MemberInvited;
+use Whilesmart\Workspaces\Events\MemberJoined;
 use Whilesmart\Workspaces\Models\Workspace;
+use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 use Workbench\App\Models\User;
 
 class WorkspaceApiTest extends TestCase
@@ -299,5 +303,127 @@ class WorkspaceApiTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['name']);
+    }
+
+    private function createInvitation(Workspace $workspace, string $email, array $attributes = []): WorkspaceInvitation
+    {
+        return WorkspaceInvitation::create(array_merge([
+            'workspace_id' => $workspace->id,
+            'email' => $email,
+            'role' => 'member',
+        ], $attributes));
+    }
+
+    #[Test]
+    public function invited_user_can_accept_invitation()
+    {
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+        $invitee = $this->createUser(['email' => 'invitee@example.com']);
+        $invitation = $this->createInvitation($workspace, 'invitee@example.com');
+
+        $response = $this->actingAs($invitee)->postJson("/workspaces/invitations/{$invitation->token}/accept");
+
+        $response->assertStatus(200)->assertJson(['success' => true]);
+        $this->assertTrue($invitee->fresh()->belongsToWorkspace($workspace));
+        $this->assertNotNull($invitation->fresh()->accepted_at);
+    }
+
+    #[Test]
+    public function user_cannot_accept_invitation_sent_to_another_email()
+    {
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+        $other = $this->createUser(['email' => 'other@example.com']);
+        $invitation = $this->createInvitation($workspace, 'invitee@example.com');
+
+        $response = $this->actingAs($other)->postJson("/workspaces/invitations/{$invitation->token}/accept");
+
+        $response->assertStatus(403);
+        $this->assertFalse($other->fresh()->belongsToWorkspace($workspace));
+    }
+
+    #[Test]
+    public function expired_invitation_cannot_be_accepted()
+    {
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+        $invitee = $this->createUser(['email' => 'invitee@example.com']);
+        $invitation = $this->createInvitation($workspace, 'invitee@example.com', ['expires_at' => now()->subDay()]);
+
+        $response = $this->actingAs($invitee)->postJson("/workspaces/invitations/{$invitation->token}/accept");
+
+        $response->assertStatus(422);
+        $this->assertFalse($invitee->fresh()->belongsToWorkspace($workspace));
+    }
+
+    #[Test]
+    public function already_accepted_invitation_cannot_be_accepted_again()
+    {
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+        $invitee = $this->createUser(['email' => 'invitee@example.com']);
+        $invitation = $this->createInvitation($workspace, 'invitee@example.com', ['accepted_at' => now()]);
+
+        $response = $this->actingAs($invitee)->postJson("/workspaces/invitations/{$invitation->token}/accept");
+
+        $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function accepting_an_unknown_token_returns_not_found()
+    {
+        $invitee = $this->createUser(['email' => 'invitee@example.com']);
+
+        $response = $this->actingAs($invitee)->postJson('/workspaces/invitations/does-not-exist/accept');
+
+        $response->assertStatus(404);
+    }
+
+    #[Test]
+    public function invited_user_can_decline_invitation()
+    {
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+        $invitee = $this->createUser(['email' => 'invitee@example.com']);
+        $invitation = $this->createInvitation($workspace, 'invitee@example.com');
+
+        $response = $this->actingAs($invitee)->postJson("/workspaces/invitations/{$invitation->token}/decline");
+
+        $response->assertStatus(200)->assertJson(['success' => true]);
+        $this->assertNotNull($invitation->fresh()->declined_at);
+        $this->assertFalse($invitee->fresh()->belongsToWorkspace($workspace));
+    }
+
+    #[Test]
+    public function inviting_a_member_dispatches_member_invited_event()
+    {
+        Event::fake([MemberInvited::class]);
+
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+
+        $this->actingAs($owner)->postJson("/workspaces/{$workspace->slug}/members/invite", [
+            'email' => 'newmember@example.com',
+            'role' => 'member',
+        ])->assertStatus(201);
+
+        Event::assertDispatched(MemberInvited::class);
+    }
+
+    #[Test]
+    public function accepting_an_invitation_dispatches_member_joined_event()
+    {
+        Event::fake([MemberJoined::class]);
+
+        $owner = $this->createUser(['email' => 'owner@example.com']);
+        $workspace = $this->createWorkspaceWithOwner($owner);
+        $invitee = $this->createUser(['email' => 'invitee@example.com']);
+        $invitation = $this->createInvitation($workspace, 'invitee@example.com');
+
+        $this->actingAs($invitee)->postJson("/workspaces/invitations/{$invitation->token}/accept")
+            ->assertStatus(200);
+
+        Event::assertDispatched(MemberJoined::class);
     }
 }
