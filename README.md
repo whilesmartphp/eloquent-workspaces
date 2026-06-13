@@ -105,16 +105,37 @@ Define the roles available in a workspace.
 
 ## Available Endpoints
 
+The `{workspace}` parameter is resolved by slug.
 
-* `GET /api/workspaces/{workspaceId}` - Get a workspace
-* `PUT /api/workspaces/{workspaceId}` - Update a workspace
-* `GET /api/workspaces/{workspaceId}/members` - Get workspace members
-* `POST /api/workspaces/{workspaceId}/members/invite` - Invite a member to a workspace
-* `DELETE /api/workspaces/{workspaceId}/members/{userId}` - Remove a member from a workspace
+### Workspaces
+* `GET /api/workspaces` - List the authenticated user's workspaces
+* `POST /api/workspaces` - Create a workspace
+* `GET /api/workspaces/{workspace}` - Get a workspace
+* `PUT /api/workspaces/{workspace}` - Update a workspace
+* `DELETE /api/workspaces/{workspace}` - Delete a workspace
+* `POST /api/workspaces/{workspace}/switch` - Switch to a workspace
+
+### Members
+* `GET /api/workspaces/{workspace}/members` - Get workspace members
+* `DELETE /api/workspaces/{workspace}/members/{userId}` - Remove a member from a workspace
+* `POST /api/workspaces/{workspace}/leave` - Leave a workspace
+
+### Invitations
+* `POST /api/workspaces/{workspace}/members/invite` - Invite a member to a workspace
+* `GET /api/workspaces/{workspace}/invitations` - List pending invitations
+* `DELETE /api/workspaces/{workspace}/invitations/{invitation}` - Cancel a pending invitation
+* `POST /api/workspaces/invitations/{token}/accept` - Accept an invitation
+* `POST /api/workspaces/invitations/{token}/decline` - Decline an invitation
+
+Accept and decline are keyed on the invitation token (the value carried in the invite). The authenticated user's email must match the address the invitation was sent to.
 
 ## Events
 
-This package does not currently dispatch any custom events.
+The package dispatches the following events, which a host application can listen for:
+
+* `MemberInvited` - an invitation was created (carries the workspace and the invitation). Listen for this to deliver the invitation email.
+* `MemberJoined` - an invited user accepted and joined (carries the workspace, the member, and the role).
+* `WorkspaceSwitched` - a user switched their current workspace (carries the new workspace, the user, and the previous workspace).
 
 ## Publishing Assets
 
