@@ -1,3 +1,8 @@
+## [1.1.1] - 2026-06-14
+
+### Fixed
+- Member, owner, and admin lists are now found when a host app uses its own `Workspace` subclass; the lookups now match the configured model instead of the base class
+
 ## [1.1.0] - 2026-06-13
 
 ### Added
