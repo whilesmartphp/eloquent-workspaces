@@ -70,7 +70,7 @@ class Workspace extends Model
             'id',
             'id',
             'assignable_id'
-        )->where('role_assignments.context_type', self::class)
+        )->where('role_assignments.context_type', static::class)
             ->where('role_assignments.assignable_type', config('workspaces.user_model', 'App\\Models\\User'));
     }
 
@@ -93,7 +93,7 @@ class Workspace extends Model
     public function roleAssignments()
     {
         return $this->hasMany('Whilesmart\\Roles\\Models\\RoleAssignment', 'context_id')
-            ->where('context_type', self::class);
+            ->where('context_type', static::class);
     }
 
     public function getOwnersAttribute()
@@ -103,7 +103,7 @@ class Workspace extends Model
                 $query->whereHas('role', function ($q) {
                     $q->where('slug', 'workspace-owner');
                 })
-                    ->where('context_type', self::class)
+                    ->where('context_type', static::class)
                     ->where('context_id', $this->id);
             })
             ->get();
@@ -116,7 +116,7 @@ class Workspace extends Model
                 $query->whereHas('role', function ($q) {
                     $q->whereIn('slug', ['workspace-owner', 'workspace-admin']);
                 })
-                    ->where('context_type', self::class)
+                    ->where('context_type', static::class)
                     ->where('context_id', $this->id);
             })
             ->get();
