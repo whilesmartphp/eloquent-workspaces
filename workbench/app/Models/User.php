@@ -9,10 +9,17 @@ use Illuminate\Notifications\Notifiable;
 use Whilesmart\Roles\Traits\HasRoles;
 use Whilesmart\Workspaces\Traits\HasWorkspaces;
 
+/**
+ * @property string $name
+ * @property int $id
+*/
 class User extends Authenticatable
 {
     /** @use HasFactory<\Workbench\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, HasWorkspaces, Notifiable;
+    use HasFactory;
+    use HasRoles;
+    use HasWorkspaces;
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.

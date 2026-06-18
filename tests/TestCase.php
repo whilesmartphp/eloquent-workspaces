@@ -9,7 +9,7 @@ use Orchestra\Testbench\TestCase as BaseTestCase;
 use function Orchestra\Testbench\workbench_path;
 
 #[WithMigration]
-abstract class TestCase extends BaseTestCase
+class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
 

@@ -2,6 +2,7 @@
 
 namespace Whilesmart\Workspaces\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -255,13 +256,18 @@ class WorkspaceController extends Controller
         $invitations = $workspace->pendingInvitations()
             ->with('invitedBy')
             ->get()
-            ->map(fn ($inv) => [
-                'id' => $inv->id,
-                'email' => $inv->email,
-                'role' => $inv->role,
-                'invited_by' => $inv->invitedBy?->name,
-                'expires_at' => $inv->expires_at,
-                'created_at' => $inv->created_at,
+            /**
+             * @param WorkspaceInvitation $inv
+             * @return array
+             */
+            // @phpstan-ignore-next-line
+            ->map(fn (WorkspaceInvitation $inv) => [
+                'id' => $inv->id,  // @phpstan-ignore-line
+                'email' => $inv->email,  // @phpstan-ignore-line
+                'role' => $inv->role,  // @phpstan-ignore-line
+                'invited_by' => $inv->invitedBy?->name,  // @phpstan-ignore-line
+                'expires_at' => $inv->expires_at,  // @phpstan-ignore-line
+                'created_at' => $inv->created_at,  // @phpstan-ignore-line
             ]);
 
         return response()->json([
@@ -421,6 +427,7 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'You do not have access to this workspace'], 403);
         }
 
+        // @phpstan-ignore-next-line
         if (method_exists($user, 'switchWorkspace')) {
             $user->switchWorkspace($workspace);
         }

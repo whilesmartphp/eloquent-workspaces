@@ -72,7 +72,7 @@ enum Role: string
     public static function byPrecedence(): array
     {
         $roles = self::cases();
-        usort($roles, fn ($a, $b) => $b->precedence() <=> $a->precedence());
+        usort($roles, fn ($role1, $role2) => $role2->precedence() <=> $role1->precedence());
 
         return $roles;
     }

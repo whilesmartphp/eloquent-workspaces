@@ -10,12 +10,15 @@ use Whilesmart\Workspaces\Models\WorkspaceInvitation;
 
 class MemberInvited
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public Workspace $workspace,
         public WorkspaceInvitation $invitation
-    ) {}
+    ) {
+    }
 
     public function invitedBy(): mixed
     {

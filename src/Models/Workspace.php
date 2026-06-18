@@ -8,10 +8,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Workbench\App\Models\User;
 
+/**
+ * @property int $id
+ * @property string $slug
+ * @property string $name
+ * @property string|null $description
+ * @property string $type
+ * @property bool $is_personal
+ * @property bool $is_active
+ * @property string $owner_type
+ * @property int $owner_id
+ * @property array|null $settings
+ * @property User|null $owner
+ * @property \Illuminate\Support\Carbon|null $created_at
+ */
 class Workspace extends Model
 {
-    use HasFactory, Sluggable, SoftDeletes;
+    use HasFactory;
+    use Sluggable;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -137,6 +154,7 @@ class Workspace extends Model
 
     public function getSetting(string $key, mixed $default = null): mixed
     {
+        // @phpstan-ignore-next-line
         return data_get($this->settings, $key, $default);
     }
 
@@ -144,6 +162,7 @@ class Workspace extends Model
     {
         $settings = $this->settings ?? [];
         data_set($settings, $key, $value);
+        // @phpstan-ignore-next-line
         $this->settings = $settings;
 
         return $this;

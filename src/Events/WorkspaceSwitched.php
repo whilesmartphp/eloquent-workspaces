@@ -9,11 +9,14 @@ use Whilesmart\Workspaces\Models\Workspace;
 
 class WorkspaceSwitched
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public function __construct(
         public Workspace $workspace,
         public mixed $switcher,
         public ?Workspace $previousWorkspace = null
-    ) {}
+    ) {
+    }
 }

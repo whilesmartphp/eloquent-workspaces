@@ -10,7 +10,9 @@ use Whilesmart\Workspaces\Models\Workspace;
 
 class MemberJoined
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     public string $role;
 
