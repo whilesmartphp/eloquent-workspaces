@@ -169,7 +169,7 @@ class WorkspaceController extends Controller
 
         $members = $workspace->members()
             ->with(['roleAssignments' => function ($query) use ($workspace) {
-                $query->where('context_type', $this->workspaceMorphClass())
+                $query->where('context_type', $workspace->getMorphClass())
                     ->where('context_id', $workspace->id)
                     ->with('role');
             }])
@@ -446,7 +446,7 @@ class WorkspaceController extends Controller
         }
 
         foreach (Role::cases() as $role) {
-            if ($role->canAccess() && $user->hasRole($role->value, $this->workspaceMorphClass(), $workspace->id)) {
+            if ($role->canAccess() && $user->hasRole($role->value, $workspace->getMorphClass(), $workspace->id)) {
                 return true;
             }
         }
@@ -463,7 +463,7 @@ class WorkspaceController extends Controller
         }
 
         foreach (Role::cases() as $role) {
-            if ($role->canManage() && $user->hasRole($role->value, $this->workspaceMorphClass(), $workspace->id)) {
+            if ($role->canManage() && $user->hasRole($role->value, $workspace->getMorphClass(), $workspace->id)) {
                 return true;
             }
         }
@@ -479,7 +479,7 @@ class WorkspaceController extends Controller
             return false;
         }
 
-        return $user->hasRole(Role::OWNER->value, $this->workspaceMorphClass(), $workspace->id);
+        return $user->hasRole(Role::OWNER->value, $workspace->getMorphClass(), $workspace->id);
     }
 
     protected function getUserRole(Workspace $workspace): ?string
@@ -491,25 +491,11 @@ class WorkspaceController extends Controller
         }
 
         foreach (Role::byPrecedence() as $role) {
-            if ($user->hasRole($role->value, $this->workspaceMorphClass(), $workspace->id)) {
+            if ($user->hasRole($role->value, $workspace->getMorphClass(), $workspace->id)) {
                 return $role->value;
             }
         }
 
         return null;
-    }
-
-    /**
-     * The name a workspace is stored under in a polymorphic column.
-     *
-     * Not the class name. A model may answer with something else, which is how
-     * a morph map works and how a subclass keeps the name its table already
-     * holds, and a comparison against the class name misses both.
-     */
-    private function workspaceMorphClass(): string
-    {
-        $model = config('workspaces.workspace_model', Workspace::class);
-
-        return (new $model)->getMorphClass();
     }
 }

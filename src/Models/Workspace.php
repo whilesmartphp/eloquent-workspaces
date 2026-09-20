@@ -71,7 +71,7 @@ class Workspace extends Model
             'id',
             'assignable_id'
         )->where('role_assignments.context_type', $this->getMorphClass())
-            ->where('role_assignments.assignable_type', config('workspaces.user_model', 'App\\Models\\User'));
+            ->where('role_assignments.assignable_type', $this->userMorphClass());
     }
 
     public function invitations(): HasMany
@@ -147,5 +147,18 @@ class Workspace extends Model
         $this->settings = $settings;
 
         return $this;
+    }
+
+    /**
+     * The name a user is stored under in a polymorphic column.
+     *
+     * A role assignment is written through the user's own morph relation, so
+     * this is what was stored, which is not always the configured class.
+     */
+    private function userMorphClass(): string
+    {
+        $model = config('workspaces.user_model', 'App\\Models\\User');
+
+        return (new $model)->getMorphClass();
     }
 }
