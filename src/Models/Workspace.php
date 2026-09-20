@@ -70,8 +70,8 @@ class Workspace extends Model
             'id',
             'id',
             'assignable_id'
-        )->where('role_assignments.context_type', static::class)
-            ->where('role_assignments.assignable_type', config('workspaces.user_model', 'App\\Models\\User'));
+        )->where('role_assignments.context_type', $this->getMorphClass())
+            ->where('role_assignments.assignable_type', $this->userMorphClass());
     }
 
     public function invitations(): HasMany
@@ -93,7 +93,7 @@ class Workspace extends Model
     public function roleAssignments()
     {
         return $this->hasMany('Whilesmart\\Roles\\Models\\RoleAssignment', 'context_id')
-            ->where('context_type', static::class);
+            ->where('context_type', $this->getMorphClass());
     }
 
     public function getOwnersAttribute()
@@ -103,7 +103,7 @@ class Workspace extends Model
                 $query->whereHas('role', function ($q) {
                     $q->where('slug', 'workspace-owner');
                 })
-                    ->where('context_type', static::class)
+                    ->where('context_type', $this->getMorphClass())
                     ->where('context_id', $this->id);
             })
             ->get();
@@ -116,7 +116,7 @@ class Workspace extends Model
                 $query->whereHas('role', function ($q) {
                     $q->whereIn('slug', ['workspace-owner', 'workspace-admin']);
                 })
-                    ->where('context_type', static::class)
+                    ->where('context_type', $this->getMorphClass())
                     ->where('context_id', $this->id);
             })
             ->get();
@@ -147,5 +147,18 @@ class Workspace extends Model
         $this->settings = $settings;
 
         return $this;
+    }
+
+    /**
+     * The name a user is stored under in a polymorphic column.
+     *
+     * A role assignment is written through the user's own morph relation, so
+     * this is what was stored, which is not always the configured class.
+     */
+    private function userMorphClass(): string
+    {
+        $model = config('workspaces.user_model', 'App\\Models\\User');
+
+        return (new $model)->getMorphClass();
     }
 }
