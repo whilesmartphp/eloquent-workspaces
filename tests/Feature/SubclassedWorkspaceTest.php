@@ -15,6 +15,16 @@ class SubWorkspace extends Workspace
     protected $table = 'workspaces';
 }
 
+class RenamedWorkspace extends Workspace
+{
+    protected $table = 'workspaces';
+
+    public function getMorphClass(): string
+    {
+        return Workspace::class;
+    }
+}
+
 class SubclassedWorkspaceTest extends TestCase
 {
     #[Test]
@@ -46,5 +56,35 @@ class SubclassedWorkspaceTest extends TestCase
         // Before the fix this returned 0, because the lookup filtered on the
         // base Workspace class while the assignment stores the subclass.
         $this->assertCount(1, $workspace->members()->get());
+    }
+
+    #[Test]
+    public function members_resolve_when_a_subclass_keeps_the_name_already_stored(): void
+    {
+        config(['workspaces.workspace_model' => RenamedWorkspace::class]);
+
+        $user = User::create([
+            'name' => 'Renamed Owner',
+            'email' => 'renamed-'.uniqid().'@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        $workspace = RenamedWorkspace::create([
+            'name' => 'Renamed Workspace',
+            'type' => 'team',
+            'owner_type' => User::class,
+            'owner_id' => $user->id,
+        ]);
+
+        RoleAssignment::create([
+            'assignable_type' => User::class,
+            'assignable_id' => $user->id,
+            'role_id' => Role::where('slug', 'owner')->first()->id,
+            'context_type' => Workspace::class,
+            'context_id' => $workspace->id,
+        ]);
+
+        $this->assertCount(1, $workspace->members()->get());
+        $this->assertContains($workspace->id, $user->workspaces()->pluck('workspaces.id')->all());
     }
 }

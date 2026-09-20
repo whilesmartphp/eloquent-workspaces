@@ -17,6 +17,20 @@ trait HasWorkspaces
         return config('workspaces.workspace_model', Workspace::class);
     }
 
+    /**
+     * The name a workspace is stored under in a polymorphic column.
+     *
+     * Not the class name. A model may answer with something else, which is how
+     * a morph map works and how a subclass keeps the name its table already
+     * holds, and a comparison against the class name misses both.
+     */
+    public static function workspaceMorphClass(): string
+    {
+        $model = static::workspaceModel();
+
+        return (new $model)->getMorphClass();
+    }
+
     public function ownedWorkspaces(): MorphMany
     {
         return $this->morphMany(static::workspaceModel(), 'owner');
@@ -31,8 +45,8 @@ trait HasWorkspaces
             'id',
             'id',
             'context_id'
-        )->where('role_assignments.assignable_type', static::class)
-            ->where('role_assignments.context_type', static::workspaceModel());
+        )->where('role_assignments.assignable_type', $this->getMorphClass())
+            ->where('role_assignments.context_type', static::workspaceMorphClass());
     }
 
     public function pendingWorkspaceInvitations()
@@ -90,7 +104,7 @@ trait HasWorkspaces
         $role = $role ?? Role::default()->value;
 
         if (method_exists($this, 'assignRole')) {
-            $this->assignRole($role, static::workspaceModel(), $workspace->id);
+            $this->assignRole($role, static::workspaceMorphClass(), $workspace->id);
         }
     }
 
@@ -98,7 +112,7 @@ trait HasWorkspaces
     {
         if (method_exists($this, 'removeRole')) {
             foreach (Role::values() as $role) {
-                $this->removeRole($role, static::workspaceModel(), $workspace->id);
+                $this->removeRole($role, static::workspaceMorphClass(), $workspace->id);
             }
         }
     }
