@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -27,6 +28,18 @@ class RenamedWorkspace extends Workspace
 
 class SubclassedWorkspaceTest extends TestCase
 {
+    /**
+     * A morph map is global and outlives the test that set one, so anything
+     * after it would resolve against a map it never asked for.
+     */
+    protected function tearDown(): void
+    {
+        Relation::morphMap([], false);
+        Relation::requireMorphMap(false);
+
+        parent::tearDown();
+    }
+
     #[Test]
     public function members_resolve_when_the_workspace_model_is_subclassed(): void
     {
@@ -86,5 +99,30 @@ class SubclassedWorkspaceTest extends TestCase
 
         $this->assertCount(1, $workspace->members()->get());
         $this->assertContains($workspace->id, $user->workspaces()->pluck('workspaces.id')->all());
+    }
+
+    #[Test]
+    public function members_resolve_when_the_user_model_is_behind_a_morph_map(): void
+    {
+        Relation::morphMap(['user' => User::class]);
+
+        $user = User::create([
+            'name' => 'Mapped Owner',
+            'email' => 'mapped-'.uniqid().'@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        $workspace = Workspace::create([
+            'name' => 'Mapped Workspace',
+            'type' => 'team',
+            'owner_type' => 'user',
+            'owner_id' => $user->id,
+        ]);
+
+        // Written the way a role assignment is written, through the user's own
+        // morph relation, which stores the alias rather than the class.
+        $user->assignRole('owner', $workspace->getMorphClass(), $workspace->id);
+
+        $this->assertCount(1, $workspace->members()->get());
     }
 }
