@@ -1,3 +1,9 @@
+## [1.2.0] - 2026-09-20
+
+### Fixed
+- Role lookups now compare the polymorphic `context_type` against the model's morph class instead of the configured class name, so a host whose subclass keeps the name already stored, or that registers a morph map, no longer sees empty workspace and member lists
+- Member lookups match the user side on the name their role assignment was stored under, which a host mapping its user model had written as an alias
+
 ## [1.1.1] - 2026-06-14
 
 ### Fixed
