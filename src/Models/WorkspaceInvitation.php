@@ -40,16 +40,72 @@ class WorkspaceInvitation extends Model
     /** @deprecated Use Role::MEMBER->value instead */
     public const ROLE_MEMBER = 'member';
 
+    /** The token for the invitation link, known only while the invitation is being created or refreshed. */
+    public ?string $plainToken = null;
+
     public static function generateToken(): string
     {
         return Str::random(64);
+    }
+
+    public static function hashesTokens(): bool
+    {
+        return (bool) config('workspaces.invitations.hash_tokens', false);
+    }
+
+    public static function storedToken(string $token): string
+    {
+        return static::hashesTokens() ? hash('sha256', $token) : $token;
+    }
+
+    public static function findByToken(string $token): ?self
+    {
+        return static::where('token', static::storedToken($token))->first();
+    }
+
+    public static function urlFor(string $token): ?string
+    {
+        $template = config('workspaces.invitations.url');
+
+        return $template ? str_replace('{token}', rawurlencode($token), $template) : null;
+    }
+
+    public function url(): ?string
+    {
+        return $this->plainToken ? static::urlFor($this->plainToken) : null;
+    }
+
+    /** Issue a new link and restart the expiry, invalidating the old link. */
+    public function refreshToken(): string
+    {
+        $plain = static::generateToken();
+        $this->forceFill([
+            'token' => static::storedToken($plain),
+            'expires_at' => now()->addDays((int) config('workspaces.invitation_expiry_days', 7)),
+        ])->save();
+        $this->plainToken = $plain;
+
+        return $plain;
+    }
+
+    public function isFor(?string $email): bool
+    {
+        return $email !== null && mb_strtolower(trim($email)) === mb_strtolower(trim((string) $this->email));
+    }
+
+    protected function setEmailAttribute(?string $value): void
+    {
+        $this->attributes['email'] = $value === null ? null : mb_strtolower(trim($value));
     }
 
     protected static function booted(): void
     {
         static::creating(function (WorkspaceInvitation $invitation) {
             if (empty($invitation->token)) {
-                $invitation->token = Str::random(64);
+                $invitation->plainToken = static::generateToken();
+                $invitation->token = static::storedToken($invitation->plainToken);
+            } elseif (! static::hashesTokens()) {
+                $invitation->plainToken = $invitation->token;
             }
             if (empty($invitation->expires_at)) {
                 $days = config('workspaces.invitation_expiry_days', 7);

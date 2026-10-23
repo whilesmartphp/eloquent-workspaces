@@ -5,12 +5,16 @@ namespace Whilesmart\Workspaces\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Whilesmart\Workspaces\Contracts\InvitationGuard;
 use Whilesmart\Workspaces\Enums\Role;
 use Whilesmart\Workspaces\Enums\WorkspaceType;
 use Whilesmart\Workspaces\Events\MemberInvited;
+use Whilesmart\Workspaces\Events\MemberRoleChanged;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
+use Whilesmart\Workspaces\Support\Names;
 
 class WorkspaceController extends Controller
 {
@@ -174,16 +178,18 @@ class WorkspaceController extends Controller
                     ->with('role');
             }])
             ->get()
+            ->unique('id')
+            ->values()
             ->map(function ($member) {
-                $roleAssignment = $member->roleAssignments->first();
-                $role = $roleAssignment?->role->slug ?? Role::default()->value;
+                $held = $member->roleAssignments->pluck('role.slug')->all();
+                $role = collect(Role::byPrecedence())->first(fn (Role $role) => in_array($role->value, $held, true));
 
                 return [
                     'user_id' => $member->id,
-                    'name' => $member->name,
+                    'name' => Names::of($member),
                     'email' => $member->email,
-                    'role' => $role,
-                    'joined_at' => $roleAssignment?->created_at,
+                    'role' => ($role ?? Role::default())->value,
+                    'joined_at' => $member->roleAssignments->min('created_at'),
                 ];
             });
 
@@ -196,7 +202,6 @@ class WorkspaceController extends Controller
     public function inviteMember(Request $request, Workspace $workspace): JsonResponse
     {
         $invitableRoles = implode(',', [Role::MEMBER->value, Role::ADMIN->value]);
-
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'role' => "required|in:{$invitableRoles}",
@@ -213,37 +218,78 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $existing = $workspace->invitations()
-            ->where('email', $request->email)
-            ->whereNull('accepted_at')
-            ->whereNull('declined_at')
-            ->first();
+        $email = mb_strtolower(trim((string) $request->input('email')));
 
-        if ($existing) {
+        return DB::transaction(function () use ($request, $workspace, $email) {
+            app(InvitationGuard::class)->beforeInvite($workspace, $email, $request->input('role'), auth()->user());
+
+            if ($workspace->members()->whereRaw('lower(email) = ?', [$email])->exists()) {
+                return response()->json(['error' => 'This email already belongs to the workspace'], 422);
+            }
+
+            $existing = $workspace->invitations()->where('email', $email)->first();
+            if ($existing?->isValid()) {
+                return response()->json([
+                    'error' => 'An invitation already exists for this email',
+                ], 422);
+            }
+            $existing?->delete();
+
+            $invitation = WorkspaceInvitation::create([
+                'workspace_id' => $workspace->id,
+                'email' => $email,
+                'role' => $request->input('role'),
+                'invited_by_user_id' => auth()->id(),
+            ]);
+
+            MemberInvited::dispatch($workspace, $invitation, $invitation->plainToken);
+
             return response()->json([
-                'error' => 'An invitation already exists for this email',
-            ], 422);
+                'success' => true,
+                'message' => 'Invitation sent successfully',
+                'data' => [
+                    'id' => $invitation->id,
+                    'email' => $invitation->email,
+                    'role' => $invitation->role,
+                    'expires_at' => $invitation->expires_at,
+                    'url' => $invitation->url(),
+                ],
+            ], 201);
+        });
+    }
+
+    public function resendInvitation(Workspace $workspace, WorkspaceInvitation $invitation): JsonResponse
+    {
+        if (! $this->userCanManage($workspace)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $invitation = WorkspaceInvitation::create([
-            'workspace_id' => $workspace->id,
-            'email' => $request->email,
-            'role' => $request->role,
-            'invited_by_user_id' => auth()->id(),
-        ]);
+        if ($invitation->workspace_id !== $workspace->id) {
+            return response()->json(['error' => 'Invitation not found'], 404);
+        }
 
-        MemberInvited::dispatch($workspace, $invitation);
+        if (! $invitation->isPending()) {
+            return response()->json(['error' => 'This invitation has already been actioned'], 422);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Invitation sent successfully',
-            'data' => [
-                'id' => $invitation->id,
-                'email' => $invitation->email,
-                'role' => $invitation->role,
-                'expires_at' => $invitation->expires_at,
-            ],
-        ], 201);
+        return DB::transaction(function () use ($workspace, $invitation) {
+            app(InvitationGuard::class)->beforeInvite($workspace, $invitation->email, $invitation->role, auth()->user());
+            $token = $invitation->refreshToken();
+
+            MemberInvited::dispatch($workspace, $invitation, $token, true);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invitation sent again',
+                'data' => [
+                    'id' => $invitation->id,
+                    'email' => $invitation->email,
+                    'role' => $invitation->role,
+                    'expires_at' => $invitation->expires_at,
+                    'url' => $invitation->url(),
+                ],
+            ]);
+        });
     }
 
     public function invitations(Workspace $workspace): JsonResponse
@@ -259,7 +305,7 @@ class WorkspaceController extends Controller
                 'id' => $inv->id,
                 'email' => $inv->email,
                 'role' => $inv->role,
-                'invited_by' => $inv->invitedBy?->name,
+                'invited_by' => Names::of($inv->invitedBy),
                 'expires_at' => $inv->expires_at,
                 'created_at' => $inv->created_at,
             ]);
@@ -288,6 +334,35 @@ class WorkspaceController extends Controller
         ]);
     }
 
+    public function previewInvitation(string $token): JsonResponse
+    {
+        $invitation = WorkspaceInvitation::findByToken($token);
+        if (! $invitation || ! $invitation->workspace) {
+            return response()->json(['error' => 'Invitation not found'], 404);
+        }
+
+        $viewer = auth()->user();
+        $status = match (true) {
+            $invitation->isAccepted() => 'accepted',
+            $invitation->isDeclined() => 'declined',
+            $invitation->isExpired() => 'expired',
+            default => 'pending',
+        };
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'workspace' => ['name' => $invitation->workspace->name, 'slug' => $invitation->workspace->slug],
+                'role' => $invitation->role,
+                'invited_by' => Names::of($invitation->invitedBy),
+                'email' => config('workspaces.invitations.mask_preview_email', true) ? Names::mask($invitation->email) : $invitation->email,
+                'expires_at' => $invitation->expires_at,
+                'status' => $status,
+                'addressed_to_viewer' => $viewer ? $invitation->isFor($viewer->email) : null,
+            ],
+        ]);
+    }
+
     public function acceptInvitation(string $token): JsonResponse
     {
         $user = auth()->user();
@@ -296,10 +371,17 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $invitation = WorkspaceInvitation::where('token', $token)->firstOrFail();
+        $invitation = WorkspaceInvitation::findByToken($token);
+        if (! $invitation) {
+            return response()->json(['error' => 'Invitation not found'], 404);
+        }
 
-        if ($invitation->email !== $user->email) {
+        if (! $invitation->isFor($user->email)) {
             return response()->json(['error' => 'This invitation was sent to a different email address'], 403);
+        }
+
+        if (config('workspaces.invitations.require_verified_email', false) && ! $user->email_verified_at) {
+            return response()->json(['error' => 'Verify your email address before accepting this invitation'], 403);
         }
 
         if (! $invitation->isValid()) {
@@ -310,7 +392,13 @@ class WorkspaceController extends Controller
             return response()->json(['error' => $reason], 422);
         }
 
-        if (! $user->acceptInvitation($invitation)) {
+        $accepted = DB::transaction(function () use ($invitation, $user) {
+            app(InvitationGuard::class)->beforeAccept($invitation, $user);
+
+            return $user->acceptInvitation($invitation->fresh());
+        });
+
+        if (! $accepted) {
             return response()->json(['error' => 'Unable to accept invitation'], 422);
         }
 
@@ -336,9 +424,12 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $invitation = WorkspaceInvitation::where('token', $token)->firstOrFail();
+        $invitation = WorkspaceInvitation::findByToken($token);
+        if (! $invitation) {
+            return response()->json(['error' => 'Invitation not found'], 404);
+        }
 
-        if ($invitation->email !== $user->email) {
+        if (! $invitation->isFor($user->email)) {
             return response()->json(['error' => 'This invitation was sent to a different email address'], 403);
         }
 
@@ -353,6 +444,54 @@ class WorkspaceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Invitation declined',
+        ]);
+    }
+
+    public function updateMember(Request $request, Workspace $workspace, string $userId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'role' => 'required|in:'.implode(',', [Role::MEMBER->value, Role::ADMIN->value]),
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if (! $this->userCanManage($workspace)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $userModel = config('workspaces.user_model', 'App\\Models\\User');
+        $member = $userModel::find($userId);
+
+        if (! $member || ! $member->belongsToWorkspace($workspace)) {
+            return response()->json(['error' => 'Member not found'], 404);
+        }
+
+        if ($workspace->isOwnedBy($member)) {
+            return response()->json(['error' => 'The owner role cannot be changed'], 422);
+        }
+
+        $from = collect(Role::byPrecedence())
+            ->first(fn (Role $role) => $member->hasRole($role->value, $workspace->getMorphClass(), $workspace->id))?->value
+            ?? Role::default()->value;
+        $to = $request->input('role');
+
+        if ($from !== $to) {
+            DB::transaction(function () use ($member, $workspace, $to) {
+                $member->leaveWorkspace($workspace);
+                $member->joinWorkspace($workspace, $to);
+            });
+            MemberRoleChanged::dispatch($workspace, $member, $from, $to);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Role updated',
+            'data' => ['user_id' => $member->id, 'role' => $to],
         ]);
     }
 
