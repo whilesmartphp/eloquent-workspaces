@@ -12,10 +12,21 @@ class MemberInvited
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    /**
+     * $token is the plain token from the link, which is not stored when
+     * tokens are hashed. $resent is true when an invitation was sent again.
+     */
     public function __construct(
         public Workspace $workspace,
-        public WorkspaceInvitation $invitation
+        public WorkspaceInvitation $invitation,
+        public ?string $token = null,
+        public bool $resent = false,
     ) {}
+
+    public function url(): ?string
+    {
+        return $this->token ? WorkspaceInvitation::urlFor($this->token) : null;
+    }
 
     public function invitedBy(): mixed
     {

@@ -41,6 +41,10 @@ return [
     'route_prefix' => env('WORKSPACES_ROUTE_PREFIX', 'api'),
     'route_middleware' => ['api'],
 
+    // Middleware for the invitation preview, which people open before they
+    // have signed in.
+    'public_route_middleware' => ['api'],
+
     /*
     |--------------------------------------------------------------------------
     | Personal Workspace Configuration
@@ -61,6 +65,29 @@ return [
     |
     */
     'invitation_expiry_days' => env('WORKSPACES_INVITATION_EXPIRY', 7),
+
+    'invitations' => [
+        // Link people open to accept, with {token} replaced, e.g.
+        // https://app.example.com/invitations/{token}. Returned when inviting
+        // and used in the invitation email.
+        'url' => env('WORKSPACES_INVITATION_URL'),
+
+        // Store only a SHA-256 hash of each token, so a copy of the database
+        // cannot be used to join. Turning this on invalidates links already
+        // sent as plain tokens.
+        'hash_tokens' => env('WORKSPACES_HASH_INVITATION_TOKENS', false),
+
+        // Only people whose email_verified_at is set may accept.
+        'require_verified_email' => env('WORKSPACES_INVITATION_REQUIRE_VERIFIED', false),
+
+        // Hide most of the invited address in the public invitation preview.
+        'mask_preview_email' => true,
+
+        'mail' => [
+            'enabled' => env('WORKSPACES_INVITATION_MAIL', false),
+            'mailable' => \Whilesmart\Workspaces\Mail\WorkspaceInvitationMail::class,
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

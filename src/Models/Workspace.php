@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Whilesmart\Workspaces\Enums\Role;
 
 class Workspace extends Model
 {
@@ -101,7 +102,7 @@ class Workspace extends Model
         return $this->members()
             ->whereHas('roleAssignments', function ($query) {
                 $query->whereHas('role', function ($q) {
-                    $q->where('slug', 'workspace-owner');
+                    $q->where('slug', Role::OWNER->value);
                 })
                     ->where('context_type', $this->getMorphClass())
                     ->where('context_id', $this->id);
@@ -114,7 +115,7 @@ class Workspace extends Model
         return $this->members()
             ->whereHas('roleAssignments', function ($query) {
                 $query->whereHas('role', function ($q) {
-                    $q->whereIn('slug', ['workspace-owner', 'workspace-admin']);
+                    $q->whereIn('slug', [Role::OWNER->value, Role::ADMIN->value]);
                 })
                     ->where('context_type', $this->getMorphClass())
                     ->where('context_id', $this->id);
