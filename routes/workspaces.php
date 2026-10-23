@@ -21,11 +21,13 @@ Route::delete('/workspaces/{workspace}', [WorkspaceController::class, 'destroy']
 
 Route::get('/workspaces/{workspace}/members', [WorkspaceController::class, 'members']);
 Route::post('/workspaces/{workspace}/members/invite', [WorkspaceController::class, 'inviteMember']);
+Route::patch('/workspaces/{workspace}/members/{userId}', [WorkspaceController::class, 'updateMember']);
 Route::delete('/workspaces/{workspace}/members/{userId}', [WorkspaceController::class, 'removeMember']);
 Route::post('/workspaces/{workspace}/leave', [WorkspaceController::class, 'leave']);
 Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switchTo']);
 
 Route::get('/workspaces/{workspace}/invitations', [WorkspaceController::class, 'invitations']);
+Route::post('/workspaces/{workspace}/invitations/{invitation}/resend', [WorkspaceController::class, 'resendInvitation']);
 Route::delete('/workspaces/{workspace}/invitations/{invitation}', [WorkspaceController::class, 'cancelInvitation']);
 
 Route::post('/workspaces/invitations/{token}/accept', [WorkspaceController::class, 'acceptInvitation']);

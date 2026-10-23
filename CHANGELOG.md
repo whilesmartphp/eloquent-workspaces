@@ -1,3 +1,20 @@
+## [1.3.0] - 2026-10-23
+
+### Added
+- People can preview an invitation before signing in: the workspace, role, inviter, a masked email and whether it is still open
+- Owners and admins can send a pending invitation again with a new link and expiry, and change a member's role between admin and member
+- Inviting returns the invitation link when `invitations.url` is set, and the bundled invitation email can be switched on
+- Invitation tokens can be stored hashed, and accepting can require a verified email
+- Hosts can refuse an invitation or an acceptance, for example to enforce a seat limit, by binding `InvitationGuard`
+- `MemberRoleChanged` is dispatched when a role changes, and `MemberInvited` now carries the link token and whether it was a resend
+
+### Fixed
+- Invited emails are matched regardless of case, so an address typed in different case can accept
+- An address whose earlier invitation was declined or expired can be invited again instead of failing
+- Inviting someone who already belongs to the workspace is refused
+- The owners and admins lists find people by the role names the package stores
+- Member names fall back to first and last name when the user model has no single name
+
 ## [1.2.0] - 2026-09-20
 
 ### Fixed

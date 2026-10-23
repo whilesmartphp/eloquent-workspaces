@@ -135,7 +135,7 @@ trait HasWorkspaces
             return false;
         }
 
-        if ($invitation->email !== $this->email) {
+        if (! $invitation->isFor($this->email)) {
             return false;
         }
 
@@ -155,7 +155,7 @@ trait HasWorkspaces
 
     public function declineInvitation(WorkspaceInvitation $invitation): bool
     {
-        if ($invitation->email !== $this->email) {
+        if (! $invitation->isFor($this->email)) {
             return false;
         }
 
