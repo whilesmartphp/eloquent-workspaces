@@ -13,22 +13,24 @@ use Whilesmart\Workspaces\Http\Controllers\WorkspaceController;
 |
 */
 
-Route::get('/workspaces', [WorkspaceController::class, 'index']);
-Route::post('/workspaces', [WorkspaceController::class, 'store']);
-Route::get('/workspaces/{workspace}', [WorkspaceController::class, 'show']);
-Route::put('/workspaces/{workspace}', [WorkspaceController::class, 'update']);
-Route::delete('/workspaces/{workspace}', [WorkspaceController::class, 'destroy']);
+$controller = config('workspaces.controller', WorkspaceController::class);
 
-Route::get('/workspaces/{workspace}/members', [WorkspaceController::class, 'members']);
-Route::post('/workspaces/{workspace}/members/invite', [WorkspaceController::class, 'inviteMember']);
-Route::patch('/workspaces/{workspace}/members/{userId}', [WorkspaceController::class, 'updateMember']);
-Route::delete('/workspaces/{workspace}/members/{userId}', [WorkspaceController::class, 'removeMember']);
-Route::post('/workspaces/{workspace}/leave', [WorkspaceController::class, 'leave']);
-Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switchTo']);
+Route::get('/workspaces', [$controller, 'index']);
+Route::post('/workspaces', [$controller, 'store']);
+Route::get('/workspaces/{workspace}', [$controller, 'show']);
+Route::put('/workspaces/{workspace}', [$controller, 'update']);
+Route::delete('/workspaces/{workspace}', [$controller, 'destroy']);
 
-Route::get('/workspaces/{workspace}/invitations', [WorkspaceController::class, 'invitations']);
-Route::post('/workspaces/{workspace}/invitations/{invitation}/resend', [WorkspaceController::class, 'resendInvitation']);
-Route::delete('/workspaces/{workspace}/invitations/{invitation}', [WorkspaceController::class, 'cancelInvitation']);
+Route::get('/workspaces/{workspace}/members', [$controller, 'members']);
+Route::post('/workspaces/{workspace}/members/invite', [$controller, 'inviteMember']);
+Route::patch('/workspaces/{workspace}/members/{userId}', [$controller, 'updateMember']);
+Route::delete('/workspaces/{workspace}/members/{userId}', [$controller, 'removeMember']);
+Route::post('/workspaces/{workspace}/leave', [$controller, 'leave']);
+Route::post('/workspaces/{workspace}/switch', [$controller, 'switchTo']);
 
-Route::post('/workspaces/invitations/{token}/accept', [WorkspaceController::class, 'acceptInvitation']);
-Route::post('/workspaces/invitations/{token}/decline', [WorkspaceController::class, 'declineInvitation']);
+Route::get('/workspaces/{workspace}/invitations', [$controller, 'invitations']);
+Route::post('/workspaces/{workspace}/invitations/{invitation}/resend', [$controller, 'resendInvitation']);
+Route::delete('/workspaces/{workspace}/invitations/{invitation}', [$controller, 'cancelInvitation']);
+
+Route::post('/workspaces/invitations/{token}/accept', [$controller, 'acceptInvitation']);
+Route::post('/workspaces/invitations/{token}/decline', [$controller, 'declineInvitation']);

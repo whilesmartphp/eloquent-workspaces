@@ -37,6 +37,9 @@ return [
     | Configure routing behavior for the workspace package.
     |
     */
+    'controller' => \Whilesmart\Workspaces\Http\Controllers\WorkspaceController::class,
+    'response_formatter' => \Whilesmart\Workspaces\Support\DefaultResponseFormatter::class,
+
     'register_routes' => env('WORKSPACES_REGISTER_ROUTES', true),
     'route_prefix' => env('WORKSPACES_ROUTE_PREFIX', 'api'),
     'route_middleware' => ['api'],
