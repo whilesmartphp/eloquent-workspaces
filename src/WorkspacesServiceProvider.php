@@ -81,7 +81,7 @@ class WorkspacesServiceProvider extends ServiceProvider
             'prefix' => config('workspaces.route_prefix', 'api'),
             'middleware' => config('workspaces.public_route_middleware', ['api']),
         ], function () {
-            Route::get('/workspaces/invitations/{token}', [WorkspaceController::class, 'previewInvitation']);
+            Route::get('/workspaces/invitations/{token}', [config('workspaces.controller', WorkspaceController::class), 'previewInvitation']);
         });
     }
 
