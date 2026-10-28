@@ -1,3 +1,12 @@
+## [1.4.0] - 2026-10-28
+
+### Added
+- Hosts can customize workspace success and error responses with a response formatter
+- Hosts can use their own workspace controller, including for public invitation previews
+
+### Fixed
+- Workspace responses use the default formatter when cached configuration lacks the formatter setting
+
 ## [1.3.0] - 2026-10-23
 
 ### Added
