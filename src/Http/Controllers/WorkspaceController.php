@@ -14,13 +14,14 @@ use Whilesmart\Workspaces\Events\MemberInvited;
 use Whilesmart\Workspaces\Events\MemberRoleChanged;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
+use Whilesmart\Workspaces\Support\DefaultResponseFormatter;
 use Whilesmart\Workspaces\Support\Names;
 
 class WorkspaceController extends Controller
 {
     protected function respond(array $payload, int $status = 200): JsonResponse
     {
-        return app(config('workspaces.response_formatter'))->format($payload, $status);
+        return app(config('workspaces.response_formatter', DefaultResponseFormatter::class))->format($payload, $status);
     }
 
     public function index(): JsonResponse

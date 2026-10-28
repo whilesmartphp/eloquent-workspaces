@@ -13,6 +13,16 @@ class ResponseFormatterTest extends TestCase
         $this->getJson('/workspaces')->assertUnauthorized()->assertExactJson(['error' => 'Unauthorized']);
     }
 
+    public function test_missing_formatter_configuration_uses_the_default_response(): void
+    {
+        $settings = config('workspaces');
+        unset($settings['response_formatter']);
+        config(['workspaces' => $settings]);
+
+        $this->assertFalse(config()->has('workspaces.response_formatter'));
+        $this->getJson('/workspaces')->assertUnauthorized()->assertExactJson(['error' => 'Unauthorized']);
+    }
+
     public function test_host_formatter_receives_the_payload_and_http_status(): void
     {
         config(['workspaces.response_formatter' => HostResponseFormatter::class]);
