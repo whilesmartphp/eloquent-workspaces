@@ -14,16 +14,22 @@ use Whilesmart\Workspaces\Events\MemberInvited;
 use Whilesmart\Workspaces\Events\MemberRoleChanged;
 use Whilesmart\Workspaces\Models\Workspace;
 use Whilesmart\Workspaces\Models\WorkspaceInvitation;
+use Whilesmart\Workspaces\Support\DefaultResponseFormatter;
 use Whilesmart\Workspaces\Support\Names;
 
 class WorkspaceController extends Controller
 {
+    protected function respond(array $payload, int $status = 200): JsonResponse
+    {
+        return app(config('workspaces.response_formatter', DefaultResponseFormatter::class))->format($payload, $status);
+    }
+
     public function index(): JsonResponse
     {
         $user = auth()->user();
 
         if (! $user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->respond(['error' => 'Unauthorized'], 401);
         }
 
         $workspaces = $user->workspaces()->get()->map(fn ($workspace) => [
@@ -38,7 +44,7 @@ class WorkspaceController extends Controller
             'created_at' => $workspace->created_at,
         ]);
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'data' => $workspaces,
         ]);
@@ -55,7 +61,7 @@ class WorkspaceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
+            return $this->respond([
                 'message' => 'The given data was invalid.',
                 'errors' => $validator->errors(),
             ], 422);
@@ -64,7 +70,7 @@ class WorkspaceController extends Controller
         $user = auth()->user();
 
         if (! $user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->respond(['error' => 'Unauthorized'], 401);
         }
 
         $workspace = $user->createWorkspace(
@@ -72,7 +78,7 @@ class WorkspaceController extends Controller
             $request->only(['description', 'type'])
         );
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'data' => [
                 'id' => $workspace->id,
@@ -88,10 +94,10 @@ class WorkspaceController extends Controller
     public function show(Workspace $workspace): JsonResponse
     {
         if (! $this->userCanAccess($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'data' => [
                 'id' => $workspace->id,
@@ -121,19 +127,19 @@ class WorkspaceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
+            return $this->respond([
                 'message' => 'The given data was invalid.',
                 'errors' => $validator->errors(),
             ], 422);
         }
 
         if (! $this->userCanManage($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         $workspace->update($request->only(['name', 'description', 'settings']));
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'data' => [
                 'id' => $workspace->id,
@@ -148,18 +154,18 @@ class WorkspaceController extends Controller
     public function destroy(Workspace $workspace): JsonResponse
     {
         if (! $this->userIsOwner($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         if ($workspace->is_personal) {
-            return response()->json([
+            return $this->respond([
                 'error' => 'Cannot delete personal workspace',
             ], 422);
         }
 
         $workspace->delete();
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Workspace deleted successfully',
         ], 204);
@@ -168,7 +174,7 @@ class WorkspaceController extends Controller
     public function members(Workspace $workspace): JsonResponse
     {
         if (! $this->userCanAccess($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         $members = $workspace->members()
@@ -193,7 +199,7 @@ class WorkspaceController extends Controller
                 ];
             });
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'data' => $members,
         ]);
@@ -208,14 +214,14 @@ class WorkspaceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
+            return $this->respond([
                 'message' => 'The given data was invalid.',
                 'errors' => $validator->errors(),
             ], 422);
         }
 
         if (! $this->userCanManage($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         $email = mb_strtolower(trim((string) $request->input('email')));
@@ -224,12 +230,12 @@ class WorkspaceController extends Controller
             app(InvitationGuard::class)->beforeInvite($workspace, $email, $request->input('role'), auth()->user());
 
             if ($workspace->members()->whereRaw('lower(email) = ?', [$email])->exists()) {
-                return response()->json(['error' => 'This email already belongs to the workspace'], 422);
+                return $this->respond(['error' => 'This email already belongs to the workspace'], 422);
             }
 
             $existing = $workspace->invitations()->where('email', $email)->first();
             if ($existing?->isValid()) {
-                return response()->json([
+                return $this->respond([
                     'error' => 'An invitation already exists for this email',
                 ], 422);
             }
@@ -244,7 +250,7 @@ class WorkspaceController extends Controller
 
             MemberInvited::dispatch($workspace, $invitation, $invitation->plainToken);
 
-            return response()->json([
+            return $this->respond([
                 'success' => true,
                 'message' => 'Invitation sent successfully',
                 'data' => [
@@ -261,15 +267,15 @@ class WorkspaceController extends Controller
     public function resendInvitation(Workspace $workspace, WorkspaceInvitation $invitation): JsonResponse
     {
         if (! $this->userCanManage($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         if ($invitation->workspace_id !== $workspace->id) {
-            return response()->json(['error' => 'Invitation not found'], 404);
+            return $this->respond(['error' => 'Invitation not found'], 404);
         }
 
         if (! $invitation->isPending()) {
-            return response()->json(['error' => 'This invitation has already been actioned'], 422);
+            return $this->respond(['error' => 'This invitation has already been actioned'], 422);
         }
 
         return DB::transaction(function () use ($workspace, $invitation) {
@@ -278,7 +284,7 @@ class WorkspaceController extends Controller
 
             MemberInvited::dispatch($workspace, $invitation, $token, true);
 
-            return response()->json([
+            return $this->respond([
                 'success' => true,
                 'message' => 'Invitation sent again',
                 'data' => [
@@ -295,7 +301,7 @@ class WorkspaceController extends Controller
     public function invitations(Workspace $workspace): JsonResponse
     {
         if (! $this->userCanManage($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         $invitations = $workspace->pendingInvitations()
@@ -310,7 +316,7 @@ class WorkspaceController extends Controller
                 'created_at' => $inv->created_at,
             ]);
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'data' => $invitations,
         ]);
@@ -319,16 +325,16 @@ class WorkspaceController extends Controller
     public function cancelInvitation(Workspace $workspace, WorkspaceInvitation $invitation): JsonResponse
     {
         if (! $this->userCanManage($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         if ($invitation->workspace_id !== $workspace->id) {
-            return response()->json(['error' => 'Invitation not found'], 404);
+            return $this->respond(['error' => 'Invitation not found'], 404);
         }
 
         $invitation->delete();
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Invitation cancelled',
         ]);
@@ -338,7 +344,7 @@ class WorkspaceController extends Controller
     {
         $invitation = WorkspaceInvitation::findByToken($token);
         if (! $invitation || ! $invitation->workspace) {
-            return response()->json(['error' => 'Invitation not found'], 404);
+            return $this->respond(['error' => 'Invitation not found'], 404);
         }
 
         $viewer = auth()->user();
@@ -349,7 +355,7 @@ class WorkspaceController extends Controller
             default => 'pending',
         };
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'data' => [
                 'workspace' => ['name' => $invitation->workspace->name, 'slug' => $invitation->workspace->slug],
@@ -368,20 +374,20 @@ class WorkspaceController extends Controller
         $user = auth()->user();
 
         if (! $user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->respond(['error' => 'Unauthorized'], 401);
         }
 
         $invitation = WorkspaceInvitation::findByToken($token);
         if (! $invitation) {
-            return response()->json(['error' => 'Invitation not found'], 404);
+            return $this->respond(['error' => 'Invitation not found'], 404);
         }
 
         if (! $invitation->isFor($user->email)) {
-            return response()->json(['error' => 'This invitation was sent to a different email address'], 403);
+            return $this->respond(['error' => 'This invitation was sent to a different email address'], 403);
         }
 
         if (config('workspaces.invitations.require_verified_email', false) && ! $user->email_verified_at) {
-            return response()->json(['error' => 'Verify your email address before accepting this invitation'], 403);
+            return $this->respond(['error' => 'Verify your email address before accepting this invitation'], 403);
         }
 
         if (! $invitation->isValid()) {
@@ -389,7 +395,7 @@ class WorkspaceController extends Controller
                 ? 'This invitation has expired'
                 : 'This invitation has already been actioned';
 
-            return response()->json(['error' => $reason], 422);
+            return $this->respond(['error' => $reason], 422);
         }
 
         $accepted = DB::transaction(function () use ($invitation, $user) {
@@ -399,10 +405,10 @@ class WorkspaceController extends Controller
         });
 
         if (! $accepted) {
-            return response()->json(['error' => 'Unable to accept invitation'], 422);
+            return $this->respond(['error' => 'Unable to accept invitation'], 422);
         }
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Invitation accepted',
             'data' => [
@@ -421,27 +427,27 @@ class WorkspaceController extends Controller
         $user = auth()->user();
 
         if (! $user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->respond(['error' => 'Unauthorized'], 401);
         }
 
         $invitation = WorkspaceInvitation::findByToken($token);
         if (! $invitation) {
-            return response()->json(['error' => 'Invitation not found'], 404);
+            return $this->respond(['error' => 'Invitation not found'], 404);
         }
 
         if (! $invitation->isFor($user->email)) {
-            return response()->json(['error' => 'This invitation was sent to a different email address'], 403);
+            return $this->respond(['error' => 'This invitation was sent to a different email address'], 403);
         }
 
         if (! $invitation->isPending()) {
-            return response()->json(['error' => 'This invitation has already been actioned'], 422);
+            return $this->respond(['error' => 'This invitation has already been actioned'], 422);
         }
 
         if (! $user->declineInvitation($invitation)) {
-            return response()->json(['error' => 'Unable to decline invitation'], 422);
+            return $this->respond(['error' => 'Unable to decline invitation'], 422);
         }
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Invitation declined',
         ]);
@@ -454,25 +460,25 @@ class WorkspaceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
+            return $this->respond([
                 'message' => 'The given data was invalid.',
                 'errors' => $validator->errors(),
             ], 422);
         }
 
         if (! $this->userCanManage($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         $userModel = config('workspaces.user_model', 'App\\Models\\User');
         $member = $userModel::find($userId);
 
         if (! $member || ! $member->belongsToWorkspace($workspace)) {
-            return response()->json(['error' => 'Member not found'], 404);
+            return $this->respond(['error' => 'Member not found'], 404);
         }
 
         if ($workspace->isOwnedBy($member)) {
-            return response()->json(['error' => 'The owner role cannot be changed'], 422);
+            return $this->respond(['error' => 'The owner role cannot be changed'], 422);
         }
 
         $from = collect(Role::byPrecedence())
@@ -488,7 +494,7 @@ class WorkspaceController extends Controller
             MemberRoleChanged::dispatch($workspace, $member, $from, $to);
         }
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Role updated',
             'data' => ['user_id' => $member->id, 'role' => $to],
@@ -498,21 +504,21 @@ class WorkspaceController extends Controller
     public function removeMember(Workspace $workspace, string $userId): JsonResponse
     {
         if (! $this->userCanManage($workspace)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return $this->respond(['error' => 'Unauthorized'], 403);
         }
 
         $userModel = config('workspaces.user_model', 'App\\Models\\User');
         $user = $userModel::findOrFail($userId);
 
         if ($workspace->isOwnedBy($user)) {
-            return response()->json([
+            return $this->respond([
                 'error' => 'Cannot remove workspace owner',
             ], 422);
         }
 
         $user->leaveWorkspace($workspace);
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Member removed successfully',
         ]);
@@ -523,18 +529,18 @@ class WorkspaceController extends Controller
         $user = auth()->user();
 
         if (! $user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->respond(['error' => 'Unauthorized'], 401);
         }
 
         if ($workspace->isOwnedBy($user)) {
-            return response()->json([
+            return $this->respond([
                 'error' => 'Owner cannot leave workspace. Transfer ownership first.',
             ], 422);
         }
 
         $user->leaveWorkspace($workspace);
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Left workspace successfully',
         ]);
@@ -553,18 +559,18 @@ class WorkspaceController extends Controller
         $user = auth()->user();
 
         if (! $user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->respond(['error' => 'Unauthorized'], 401);
         }
 
         if (! $this->userCanAccess($workspace)) {
-            return response()->json(['error' => 'You do not have access to this workspace'], 403);
+            return $this->respond(['error' => 'You do not have access to this workspace'], 403);
         }
 
         if (method_exists($user, 'switchWorkspace')) {
             $user->switchWorkspace($workspace);
         }
 
-        return response()->json([
+        return $this->respond([
             'success' => true,
             'message' => 'Switched to workspace',
             'data' => [

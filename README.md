@@ -184,3 +184,15 @@ php artisan vendor:publish --provider="Whilesmart\\Workspaces\\WorkspacesService
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Host response formatting
+
+Set `workspaces.response_formatter` to a class implementing
+`Whilesmart\Workspaces\Contracts\ResponseFormatter`. Its `format(array $payload,
+int $status = 200): JsonResponse` method receives every controller response,
+including validation and authorization failures. The default formatter preserves
+the package response shape.
+
+Set `workspaces.controller` to a subclass of the package controller to customize
+application presentation while retaining the package membership and invitation
+flows. Both authenticated routes and the public invitation preview use it.
